@@ -37,7 +37,7 @@ class StockResult:
 # --- coercion ----------------------------------------------------------------
 
 
-def _coerce_int(value) -> int | None:
+def coerce_int(value) -> int | None:
     if isinstance(value, bool) or value is None:
         return None
     if isinstance(value, int):
@@ -49,7 +49,7 @@ def _coerce_int(value) -> int | None:
             number = float(value.strip())
         except ValueError:
             return None
-        return _coerce_int(number)
+        return coerce_int(number)
     return None
 
 
@@ -77,7 +77,7 @@ def _coerce_str(value, limit: int = 500) -> str:
 
 def normalise_product(data: dict, fallback_sku: str = "") -> dict:
     """Build the canonical product dict from untrusted API JSON."""
-    quantity = _coerce_int(data.get("quantity"))
+    quantity = coerce_int(data.get("quantity"))
     quantity = max(quantity, 0) if quantity is not None else 0
     image = _coerce_str(data.get("image"), 1000)
     if not image.startswith(("https://", "http://")):
@@ -102,15 +102,22 @@ def _get_json(path: str, timeout: float):
     if not base:
         raise StockAPIError("STOCK_API_URL is not configured")
     url = base + path
-    try:
-        response = httpx.get(
-            url,
-            headers={"Authorization": f"Bearer {settings.STOCK_API_KEY}", "Accept": "application/json"},
-            timeout=httpx.Timeout(timeout, connect=min(timeout, 3.0)),
-            follow_redirects=False,
-        )
-    except httpx.HTTPError as exc:
-        raise StockAPIError(f"stock API unreachable: {exc.__class__.__name__}") from exc
+    connect_timeout = min(timeout / 2, 2.5)
+    for attempt in (1, 2):
+        try:
+            response = httpx.get(
+                url,
+                headers={"Authorization": f"Bearer {settings.STOCK_API_KEY}", "Accept": "application/json"},
+                timeout=httpx.Timeout(timeout, connect=connect_timeout),
+                follow_redirects=False,
+            )
+            break
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            # Nothing reached the server yet, so one immediate retry is free.
+            if attempt == 2:
+                raise StockAPIError(f"stock API unreachable: {exc.__class__.__name__}") from exc
+        except httpx.HTTPError as exc:
+            raise StockAPIError(f"stock API unreachable: {exc.__class__.__name__}") from exc
     if response.status_code != 200:
         raise StockAPIError(f"stock API returned HTTP {response.status_code}")
     try:
@@ -124,7 +131,7 @@ def check_stock(sku: str, timeout: float = DEFAULT_TIMEOUT) -> StockResult:
     data = _get_json("/" + quote(sku, safe=""), timeout)
     if not isinstance(data, dict):
         raise StockAPIError("stock API response is not an object")
-    quantity = _coerce_int(data.get("quantity"))
+    quantity = coerce_int(data.get("quantity"))
     if quantity is None:
         raise StockAPIError("stock API response has no numeric quantity")
     product = normalise_product(data, fallback_sku=sku)
@@ -136,20 +143,26 @@ def check_stock(sku: str, timeout: float = DEFAULT_TIMEOUT) -> StockResult:
 # --- catalogue cache -------------------------------------------------------------
 
 _cache_lock = threading.Lock()
-_cache: dict = {"products": None, "fetched_at": 0.0}
+_cache: dict = {"products": None, "fetched_at": 0.0, "failed_at": float("-inf")}
+FAILURE_COOLDOWN = 10.0  # after a failed fetch, serve what we have for a while instead of blocking callers
 
 
 def fetch_catalogue(timeout: float = DEFAULT_TIMEOUT) -> list[dict]:
     """Fetch the catalogue now (no cache). Raises StockAPIError."""
-    data = _get_json("", timeout)
-    items = data.get("products") if isinstance(data, dict) else data
-    if not isinstance(items, list):
-        raise StockAPIError("catalogue response has no product list")
+    try:
+        data = _get_json("", timeout)
+        items = data.get("products") if isinstance(data, dict) else data
+        if not isinstance(items, list):
+            raise StockAPIError("catalogue response has no product list")
+    except StockAPIError:
+        with _cache_lock:
+            _cache["failed_at"] = time.monotonic()
+        raise
     products = []
     for item in items:
         if not isinstance(item, dict):
             continue
-        if _coerce_int(item.get("quantity")) is None:
+        if coerce_int(item.get("quantity")) is None:
             continue  # without a trustworthy quantity the row is useless
         product = normalise_product(item)
         if product["sku"]:
@@ -160,12 +173,17 @@ def fetch_catalogue(timeout: float = DEFAULT_TIMEOUT) -> list[dict]:
     return [dict(p) for p in products]
 
 
-def get_catalogue(max_age: float = CATALOGUE_TTL) -> list[dict]:
-    """Cached catalogue. On error serves stale data, or [] if there is none."""
+def get_catalogue(max_age: float = CATALOGUE_TTL, fetch: bool = True) -> list[dict]:
+    """Cached catalogue. On error serves stale data, or [] if there is none.
+
+    With fetch=False it never touches the network (for latency-critical paths).
+    """
     with _cache_lock:
-        products, fetched_at = _cache["products"], _cache["fetched_at"]
-    if products is not None and time.monotonic() - fetched_at < max_age:
-        return [dict(p) for p in products]
+        products, fetched_at, failed_at = _cache["products"], _cache["fetched_at"], _cache["failed_at"]
+    now = time.monotonic()
+    fresh = products is not None and now - fetched_at < max_age
+    if fresh or not fetch or now - failed_at < FAILURE_COOLDOWN:
+        return [dict(p) for p in products or []]
     try:
         return fetch_catalogue(timeout=3.0)
     except StockAPIError as exc:
@@ -177,17 +195,29 @@ def clear_cache() -> None:
     with _cache_lock:
         _cache["products"] = None
         _cache["fetched_at"] = 0.0
+        _cache["failed_at"] = float("-inf")
 
 
-def catalogue_by_sku() -> dict[str, dict]:
+def catalogue_by_sku(fetch: bool = True) -> dict[str, dict]:
     """Catalogue keyed by upper-cased SKU for case-insensitive lookups."""
-    return {p["sku"].upper(): p for p in get_catalogue()}
+    return {p["sku"].upper(): p for p in get_catalogue(fetch=fetch)}
 
 
-def canonical_sku(sku: str) -> str:
-    """Return the catalogue's casing for `sku` if it matches case-insensitively, else `sku` unchanged."""
-    match = catalogue_by_sku().get(sku.upper())
-    return match["sku"] if match else sku
+def canonical_sku(sku: str, fetch: bool = True) -> str:
+    """Return the catalogue's casing for `sku` if it matches case-insensitively, else `sku` unchanged.
+
+    If no catalogue is available, reuse the casing of an existing request for the
+    same SKU so the two spellings don't split apart. Reconciliation repairs
+    anything left non-canonical once the catalogue is back.
+    """
+    catalogue = catalogue_by_sku(fetch=fetch)
+    if catalogue:
+        match = catalogue.get(sku.upper())
+        return match["sku"] if match else sku
+    from alerts.models import AlertRequest
+
+    known = AlertRequest.objects.filter(sku__iexact=sku).order_by("-created_at").values_list("sku", flat=True)
+    return known.first() or sku
 
 
 def get_product(sku: str, lookup: bool = True) -> dict | None:
