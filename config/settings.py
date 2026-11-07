@@ -114,6 +114,8 @@ DATABASES = {
             "transaction_mode": "IMMEDIATE",
             "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
         },
+        # A file (not :memory:) so concurrency tests see real SQLite locking.
+        "TEST": {"NAME": str(DATA_DIR / "test_db.sqlite3")},
     }
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
