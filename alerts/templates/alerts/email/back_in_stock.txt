@@ -1,0 +1,6 @@
+{{ product_name }} is back in stock at {{ store_name }}.
+{% if price_display %}{{ price_display }}
+{% endif %}
+Shop now: {{ product_url }}
+
+You asked us on {{ requested_at|date:"j M Y" }} to email {{ email }} when {{ sku }} came back.

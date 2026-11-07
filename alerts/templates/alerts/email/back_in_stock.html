@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ product_name }} is back in stock</title></head>
+<body>
+<p>Good news: <strong>{{ product_name }}</strong> ({{ sku }}) is back in stock at {{ store_name }}.</p>
+{% if image_url %}<p><img src="{{ image_url }}" alt="{{ product_name }}" width="300"></p>{% endif %}
+{% if price_display %}<p>{{ price_display }}</p>{% endif %}
+<p><a href="{{ product_url }}">Shop now</a></p>
+<p>You asked us to tell you on {{ requested_at|date:"j M Y" }}. Sent to {{ email }}.</p>
+</body></html>
