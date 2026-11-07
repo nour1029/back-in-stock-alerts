@@ -1,1 +1,11 @@
-urlpatterns = []
+from django.urls import path
+
+from alerts.views import api, pages
+
+urlpatterns = [
+    path("", pages.home, name="home"),
+    path("embed", pages.embed, name="embed"),
+    path("healthz", pages.healthz, name="healthz"),
+    path("api/requests", api.create_request, name="create_request"),
+    path("webhooks/stock", api.stock_webhook, name="stock_webhook"),
+]
