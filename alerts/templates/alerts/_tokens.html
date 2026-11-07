@@ -1,0 +1,115 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f1f4f7;
+    --surface-hover: #f8fafc;
+    --border: #e3e8ee;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-2: #475569;
+    --text-3: #64748b;
+    --accent: #047857;
+    --accent-hover: #065f46;
+    --on-accent: #ffffff;
+    --accent-soft: #ecfdf5;
+    --accent-text: #065f46;
+    --info: #1d4ed8;  --info-soft: #eff6ff;  --info-text: #1e40af;
+    --warn: #b45309;  --warn-soft: #fffbeb;  --warn-text: #92400e;
+    --bad: #b91c1c;   --bad-soft: #fef2f2;   --bad-text: #991b1b;
+    --neutral-soft: #f1f5f9; --neutral-text: #475569;
+    --ring: rgba(4, 120, 87, .35);
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, .06);
+    --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 4px 16px rgba(15, 23, 42, .06);
+    --shadow-lg: 0 24px 64px rgba(15, 23, 42, .18);
+    --radius-sm: 6px; --radius: 10px; --radius-lg: 14px;
+    --font: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(.2, .8, .2, 1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f17;
+      --surface: #121826;
+      --surface-2: #1a2232;
+      --surface-hover: #161e2d;
+      --border: #232d3f;
+      --border-strong: #334155;
+      --text: #f1f5f9;
+      --text-2: #cbd5e1;
+      --text-3: #94a3b8;
+      --accent: #34d399;
+      --accent-hover: #6ee7b7;
+      --on-accent: #052e22;
+      --accent-soft: rgba(52, 211, 153, .12);
+      --accent-text: #6ee7b7;
+      --info: #93c5fd;  --info-soft: rgba(96, 165, 250, .14);  --info-text: #bfdbfe;
+      --warn: #fbbf24;  --warn-soft: rgba(251, 191, 36, .13);  --warn-text: #fde68a;
+      --bad: #f87171;   --bad-soft: rgba(248, 113, 113, .14);  --bad-text: #fecaca;
+      --neutral-soft: rgba(148, 163, 184, .14); --neutral-text: #cbd5e1;
+      --ring: rgba(52, 211, 153, .4);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px rgba(0, 0, 0, .3);
+      --shadow-lg: 0 24px 64px rgba(0, 0, 0, .55);
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 var(--font); -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  a { color: inherit; }
+  img { display: block; max-width: 100%; }
+  .icon { flex: none; display: inline-block; vertical-align: middle; }
+  .num { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); font-size: .86em; letter-spacing: -.01em; }
+  .muted { color: var(--text-3); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 40px; padding: 0 16px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+    font: 600 14px/1 var(--font); text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), transform .1s var(--ease);
+    touch-action: manipulation;
+  }
+  .btn:hover { background: var(--surface-hover); border-color: var(--text-3); }
+  .btn:active { transform: scale(.98); }
+  .btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn--primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn--ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+  .btn--ghost:hover { background: var(--surface-2); border-color: transparent; color: var(--text); }
+  .btn--sm { min-height: 32px; padding: 0 10px; font-size: 13px; }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+  /* Status pills: colour is always paired with an icon + label */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px 0 7px;
+    border-radius: 999px; font: 600 12px/1 var(--font); white-space: nowrap;
+  }
+  .pill--ok      { background: var(--accent-soft);  color: var(--accent-text); }
+  .pill--info    { background: var(--info-soft);    color: var(--info-text); }
+  .pill--warn    { background: var(--warn-soft);    color: var(--warn-text); }
+  .pill--bad     { background: var(--bad-soft);     color: var(--bad-text); }
+  .pill--neutral { background: var(--neutral-soft); color: var(--neutral-text); }
+
+  /* Brand mark */
+  .mark {
+    display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+    background: var(--accent); color: var(--on-accent); flex: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>

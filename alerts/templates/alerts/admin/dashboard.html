@@ -1,0 +1,393 @@
+{% load ui %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% if counts.failed %}({{ counts.failed }} failed) {% endif %}Restock alerts · {{ store_name }}</title>
+{% include "alerts/_tokens.html" %}
+<style>
+  /* ---------- Shell ---------- */
+  .topbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--border); }
+  .topbar__inner { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; }
+  .brand__name { font-weight: 700; font-size: 14px; letter-spacing: -.01em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand__sub { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .topbar__actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .topbar__actions form { margin: 0; }
+  .switch { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; user-select: none; }
+  .switch:hover { background: var(--surface-2); color: var(--text); }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch__track { position: relative; width: 30px; height: 18px; border-radius: 999px; background: var(--border-strong); transition: background-color .2s var(--ease); }
+  .switch__track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform .2s var(--ease); }
+  .switch input:checked + .switch__track { background: var(--accent); }
+  .switch input:checked + .switch__track::after { transform: translateX(12px); }
+  .switch input:focus-visible + .switch__track { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+  .is-live .live-dot { background: var(--accent); box-shadow: 0 0 0 0 var(--ring); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--ring); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; }
+  .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.02em; font-weight: 800; }
+  .page-head p { margin: 4px 0 0; color: var(--text-2); font-size: 14px; }
+  .updated { font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ---------- KPIs ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); min-width: 0; }
+  .kpi__label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .kpi__icon { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--surface-2); color: var(--text-2); }
+  .kpi__value { margin-top: 10px; font-size: 30px; line-height: 1; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .kpi__sub { margin-top: 8px; font-size: 12px; color: var(--text-3); }
+  .kpi--ok .kpi__icon { background: var(--accent-soft); color: var(--accent-text); }
+  .kpi--info .kpi__icon { background: var(--info-soft); color: var(--info-text); }
+  .kpi--bad { border-color: color-mix(in srgb, var(--bad) 40%, var(--border)); }
+  .kpi--bad .kpi__icon { background: var(--bad-soft); color: var(--bad-text); }
+  .kpi--bad .kpi__value { color: var(--bad); }
+
+  /* ---------- Safeguards strip ---------- */
+  .guards { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 28px; padding: 12px 18px; margin-bottom: 28px; border: 1px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface); font-size: 13px; color: var(--text-2); }
+  .guards__title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-text); }
+  .guard { display: inline-flex; align-items: center; gap: 8px; }
+  .guard strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Cards / sections ---------- */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 24px; overflow: hidden; }
+  .card__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 0; }
+  .card__head h2 { margin: 0; font-size: 16px; letter-spacing: -.01em; }
+  .card__head p { margin: 2px 0 0; font-size: 13px; color: var(--text-3); }
+  .search { position: relative; width: min(320px, 100%); }
+  .search .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+  .search input { width: 100%; height: 38px; padding: 0 12px 0 34px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 14px var(--font); }
+  .search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+
+  .tabs { display: flex; gap: 4px; padding: 14px 20px 0; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { display: inline-flex; align-items: center; gap: 7px; padding: 10px 10px 11px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--text-2); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; transition: color .15s var(--ease), border-color .15s var(--ease); }
+  .tab:hover { color: var(--text); }
+  .tab[aria-current="page"] { color: var(--text); border-bottom-color: var(--accent); }
+  .tab__count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+  .tab[aria-current="page"] .tab__count { background: var(--accent-soft); color: var(--accent-text); }
+  .tab--bad .tab__count { background: var(--bad-soft); color: var(--bad-text); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { position: sticky; top: 0; padding: 10px 16px; background: var(--surface-2); color: var(--text-3); font-size: 12px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr { transition: background-color .12s var(--ease); }
+  tbody tr:hover { background: var(--surface-hover); }
+  tbody tr:last-child td { border-bottom: 0; }
+  .cust { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .avatar { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; }
+  .email { font-weight: 600; min-width: 0; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prod__name { display: block; min-width: 160px; }
+  .prod { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .thumb { flex: none; width: 36px; height: 36px; border-radius: 8px; object-fit: cover; background: var(--surface-2); }
+  .thumb--blank { display: grid; place-items: center; color: var(--text-3); }
+  .prod__name { font-weight: 500; line-height: 1.3; }
+  .prod__sku { display: block; color: var(--text-3); }
+  .when { white-space: nowrap; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .when small { display: block; font-size: 12px; color: var(--text-3); }
+  .detail { display: block; margin-top: 5px; max-width: 260px; font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .detail--bad { color: var(--bad-text); }
+  .col-actions { width: 1%; text-align: right; white-space: nowrap; }
+  .col-actions form { margin: 0; }
+  .fast { color: var(--accent-text); font-weight: 600; }
+  .qty { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .qty__arrow { color: var(--text-3); margin: 0 4px; }
+  .qty--lie { color: var(--warn-text); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+  .dup { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; background: var(--info-soft); color: var(--info-text); font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+  .empty { padding: 48px 20px; text-align: center; color: var(--text-2); }
+  .empty__icon { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 12px; border-radius: 12px; background: var(--surface-2); color: var(--text-3); }
+  .empty h3 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
+  .empty p { margin: 0 auto; max-width: 44ch; font-size: 13px; }
+  .empty a { color: var(--accent-text); font-weight: 600; }
+
+  .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); }
+  .pager__nav { display: flex; gap: 6px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1024px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 760px) {
+    .topbar__inner, main { padding-left: 16px; padding-right: 16px; }
+    .btn__text { display: none; }
+    .kpi__value { font-size: 26px; }
+    .card__head { padding: 16px 16px 0; }
+    .tabs { padding: 12px 12px 0; }
+    /* Rows become stacked cards */
+    .stack thead { display: none; }
+    .stack, .stack tbody, .stack tr, .stack td { display: block; width: 100%; }
+    .stack tr { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .stack tbody tr:last-child { border-bottom: 0; }
+    .stack td { padding: 4px 0; border: 0; }
+    .stack td[data-label] { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; column-gap: 8px; }
+    .stack td[data-label]::before { content: attr(data-label); color: var(--text-3); font-size: 12px; font-weight: 600; }
+    .stack td.when, .stack td.qty { white-space: normal; }
+    .stack .when small { display: inline; margin-left: 4px; }
+    .stack .col-actions { text-align: left; padding-top: 8px; }
+    .stack .detail { max-width: none; white-space: normal; }
+    .stack .email { max-width: none; white-space: normal; overflow-wrap: anywhere; }
+    .stack .prod__name { min-width: 0; }
+  }
+  @media (max-width: 420px) { .kpis { grid-template-columns: 1fr 1fr; gap: 8px; } .kpi { padding: 14px; } .switch__label { display: none; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="brand" href="/admin">
+      <span class="mark">{% icon "bell" 18 %}</span>
+      <span class="brand__name">{{ store_name }}<span class="brand__sub">Restock alerts</span></span>
+    </a>
+    <div class="topbar__actions">
+      <label class="switch" id="live-switch" title="Refresh this page every 15 seconds">
+        <input type="checkbox" id="live-toggle">
+        <span class="switch__track" aria-hidden="true"></span>
+        <span class="switch__label">Live</span>
+      </label>
+      <a class="btn btn--ghost" href="/admin/export.csv" aria-label="Export all requests as CSV">{% icon "download" 16 %}<span class="btn__text">Export CSV</span></a>
+      <form method="post" action="/admin/logout">
+        {% csrf_token %}
+        <button class="btn btn--ghost" type="submit" aria-label="Sign out">{% icon "logout" 16 %}<span class="btn__text">Sign out</span></button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="page-head">
+    <div>
+      <h1>Overview</h1>
+      <p>Customers waiting on sold-out products, and every alert that went out.</p>
+    </div>
+    <span class="updated" id="live-status"><span class="live-dot" aria-hidden="true"></span>Updated <time datetime="{{ now|date:'c' }}" data-rel>{{ now|date:"H:i" }} UTC</time></span>
+  </div>
+
+  {% with waiting_total=counts.waiting|add:counts.queued %}
+  <section class="kpis" aria-label="Key numbers">
+    <div class="kpi kpi--info">
+      <div class="kpi__label"><span class="kpi__icon">{% icon "users" 15 %}</span>Waiting customers</div>
+      <div class="kpi__value">{{ waiting_total }}</div>
+      <div class="kpi__sub">{{ stats.requests_24h }} new request{{ stats.requests_24h|pluralize }} in the last 24h</div>
+    </div>
+    <div class="kpi kpi--ok">
+      <div class="kpi__label"><span class="kpi__icon">{% icon "mail" 15 %}</span>Notified · 24h</div>
+      <div class="kpi__value">{{ stats.notified_24h }}</div>
+      <div class="kpi__sub">{{ counts.notified }} alert{{ counts.notified|pluralize }} delivered all time</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__label"><span class="kpi__icon">{% icon "timer" 15 %}</span>Restock to inbox</div>
+      <div class="kpi__value">{% if stats.median_seconds_to_notify is not None %}{{ stats.median_seconds_to_notify|duration }}{% else %}–{% endif %}</div>
+      <div class="kpi__sub">{% if stats.median_seconds_to_notify is not None %}Median time from webhook to email{% else %}Shown after the first alert goes out{% endif %}</div>
+    </div>
+    <div class="kpi{% if counts.failed %} kpi--bad{% endif %}">
+      <div class="kpi__label"><span class="kpi__icon">{% icon "alert" 15 %}</span>Needs attention</div>
+      <div class="kpi__value">{{ counts.failed }}</div>
+      <div class="kpi__sub">{% if stats.retries_pending %}{{ stats.retries_pending }} retrying automatically{% elif counts.failed %}Failed sends. Retry them below{% else %}No failed sends{% endif %}</div>
+    </div>
+  </section>
+  {% endwith %}
+
+  <section class="guards" aria-label="Delivery safeguards">
+    <span class="guards__title">{% icon "shield" 16 %}Delivery safeguards</span>
+    <span class="guard">{% icon "layers" 15 %}<span><strong>{{ stats.duplicate_deliveries }}</strong> duplicate webhook deliver{{ stats.duplicate_deliveries|pluralize:"y,ies" }} absorbed</span></span>
+    <span class="guard">{% icon "ghost" 15 %}<span><strong>{{ stats.phantom_events }}</strong> phantom restock{{ stats.phantom_events|pluralize }} ignored</span></span>
+    <span class="guard">{% icon "zap" 15 %}<span><strong>{{ stats.events_24h }}</strong> stock event{{ stats.events_24h|pluralize }} verified in 24h</span></span>
+  </section>
+
+  <!-- ================= Requests ================= -->
+  <section class="card" aria-labelledby="requests-title">
+    <div class="card__head">
+      <div>
+        <h2 id="requests-title">Alert requests</h2>
+        <p>One open request per customer and product. Each one is emailed exactly once.</p>
+      </div>
+      <form class="search" method="get" action="/admin" role="search">
+        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        {% icon "search" 15 %}
+        <label class="sr-only" for="q">Search by email or SKU</label>
+        <input id="q" name="q" type="search" value="{{ q }}" placeholder="Search email or SKU" autocomplete="off">
+      </form>
+    </div>
+
+    <nav class="tabs" aria-label="Filter by status">
+      {% with qparam=q|urlencode %}
+      <a class="tab" href="/admin{% if q %}?q={{ qparam }}{% endif %}" {% if not status %}aria-current="page"{% endif %}>All <span class="tab__count">{{ counts.all }}</span></a>
+      <a class="tab" href="?status=waiting{% if q %}&q={{ qparam }}{% endif %}" {% if status == "waiting" %}aria-current="page"{% endif %}>Waiting <span class="tab__count">{{ counts.waiting }}</span></a>
+      <a class="tab" href="?status=queued{% if q %}&q={{ qparam }}{% endif %}" {% if status == "queued" %}aria-current="page"{% endif %}>Queued <span class="tab__count">{{ counts.queued }}</span></a>
+      <a class="tab" href="?status=sending{% if q %}&q={{ qparam }}{% endif %}" {% if status == "sending" %}aria-current="page"{% endif %}>Sending <span class="tab__count">{{ counts.sending }}</span></a>
+      <a class="tab" href="?status=notified{% if q %}&q={{ qparam }}{% endif %}" {% if status == "notified" %}aria-current="page"{% endif %}>Notified <span class="tab__count">{{ counts.notified }}</span></a>
+      <a class="tab{% if counts.failed %} tab--bad{% endif %}" href="?status=failed{% if q %}&q={{ qparam }}{% endif %}" {% if status == "failed" %}aria-current="page"{% endif %}>Failed <span class="tab__count">{{ counts.failed }}</span></a>
+      {% endwith %}
+    </nav>
+
+    {% if page_obj.object_list %}
+    <div class="table-wrap">
+      <table class="stack">
+        <thead>
+          <tr>
+            <th scope="col">Customer</th>
+            <th scope="col">Product</th>
+            <th scope="col">Status</th>
+            <th scope="col">Requested</th>
+            <th scope="col">Notified</th>
+            <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in page_obj.object_list %}
+          <tr>
+            <td>
+              <div class="cust"><span class="avatar" aria-hidden="true">{{ r.email|initial }}</span><span class="email" title="{{ r.email }}">{{ r.email }}</span></div>
+            </td>
+            <td data-label="Product"><div class="cell"><div class="prod">
+                {% if r.product.image %}<img class="thumb" src="{{ r.product.image }}" alt="" width="36" height="36" loading="lazy" decoding="async">{% else %}<span class="thumb thumb--blank">{% icon "package" 16 %}</span>{% endif %}
+                <span><span class="prod__name">{{ r.product.name|default:r.product_name|default:r.sku }}</span><span class="prod__sku mono">{{ r.sku }}</span></span>
+              </div></div></td>
+            <td data-label="Status"><div class="cell">{% status_pill r %}
+              {% if r.status != "notified" and r.attempts %}
+                <span class="detail{% if r.status == 'failed' %} detail--bad{% endif %}" title="{{ r.last_error }}">Attempt {{ r.attempts }}{% if r.last_error %} · {{ r.last_error }}{% endif %}</span>
+              {% endif %}</div></td>
+            <td data-label="Requested" class="when"><div class="cell"><time datetime="{{ r.created_at|date:'c' }}" data-rel>{{ r.created_at|date:"j M, H:i" }}</time></div></td>
+            <td data-label="Notified" class="when"><div class="cell">{% if r.notified_at %}
+                <time datetime="{{ r.notified_at|date:'c' }}" data-rel>{{ r.notified_at|date:"j M, H:i" }}</time>
+                {% if r.triggered_by %}{% seconds_between r.notified_at r.triggered_by.received_at as lag %}<small><span class="fast">{{ lag|duration }}</span> after restock</small>{% endif %}
+              {% elif r.status == "waiting" and r.due_at %}
+                <span class="muted">Next try</span> <time datetime="{{ r.due_at|date:'c' }}" data-rel>{{ r.due_at|date:"H:i" }}</time>
+              {% elif r.status == "sending" %}
+                <span class="muted">In progress…</span>
+              {% else %}
+                <span class="muted">–</span>
+              {% endif %}</div></td>
+            <td class="col-actions">
+              {% if r.status == "failed" %}
+              <form method="post" action="/admin/requests/{{ r.public_id }}/retry">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="/admin?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.number }}">
+                <button class="btn btn--sm" type="submit">{% icon "refresh" 14 %}Retry now</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pager" aria-label="Pagination">
+      <span class="num">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+      <span class="pager__nav">
+        {% if page_obj.has_previous %}<a class="btn btn--sm" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" rel="prev">{% icon "chevron-left" 14 %}Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a class="btn btn--sm" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" rel="next">Next{% icon "chevron-right" 14 %}</a>{% endif %}
+      </span>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="empty">
+      <span class="empty__icon">{% icon "inbox" 22 %}</span>
+      {% if q or status %}
+        <h3>No matching requests</h3>
+        <p>Nothing {% if status %}in “{{ status }}” {% endif %}{% if q %}matches “{{ q }}”{% endif %}. <a href="/admin">Clear filters</a></p>
+      {% else %}
+        <h3>No requests yet</h3>
+        <p>When a shopper asks to be notified from the embed form, they’ll show up here.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ================= Webhooks ================= -->
+  <section class="card" aria-labelledby="events-title">
+    <div class="card__head" style="padding-bottom: 14px;">
+      <div>
+        <h2 id="events-title">Stock webhooks</h2>
+        <p>Every webhook is checked against the live stock API before anyone is emailed.</p>
+      </div>
+    </div>
+    {% if events %}
+    <div class="table-wrap">
+      <table class="stack">
+        <thead>
+          <tr>
+            <th scope="col">Received</th>
+            <th scope="col">Event</th>
+            <th scope="col">Product</th>
+            <th scope="col">Quantity <span class="sr-only">reported then verified</span></th>
+            <th scope="col">Result</th>
+            <th scope="col">Alerts queued</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in events %}
+          <tr>
+            <td class="when"><time datetime="{{ e.received_at|date:'c' }}" data-rel>{{ e.received_at|date:"j M, H:i:s" }}</time></td>
+            <td data-label="Event"><div class="cell"><span class="mono">{{ e.event_id }}</span>
+              {% if e.deliveries > 1 %}<span class="dup" title="The same event arrived {{ e.deliveries }} times and was processed once">{% icon "layers" 12 %}×{{ e.deliveries }}</span>{% endif %}</div></td>
+            <td data-label="Product" class="mono"><div class="cell">{{ e.sku }}</div></td>
+            <td data-label="Quantity" class="qty" title="Webhook said {{ e.reported_quantity|default_if_none:'?' }}; stock API said {{ e.verified_quantity|default_if_none:'?' }}"><div class="cell"><span class="{% if e.outcome == 'phantom' %}qty--lie{% endif %}">{{ e.reported_quantity|default_if_none:"–" }}</span><span class="qty__arrow" aria-hidden="true">→</span><strong>{{ e.verified_quantity|default_if_none:"…" }}</strong></div></td>
+            <td data-label="Result"><div class="cell">{% outcome_pill e %}{% if e.status == "failed" and e.last_error %}<span class="detail detail--bad" title="{{ e.last_error }}">{{ e.last_error }}</span>{% endif %}</div></td>
+            <td data-label="Queued" class="num"><div class="cell">{% if e.queued_count %}{{ e.queued_count }} customer{{ e.queued_count|pluralize }}{% else %}<span class="muted">–</span>{% endif %}</div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty" style="border-top: 1px solid var(--border);">
+      <span class="empty__icon">{% icon "zap" 22 %}</span>
+      <h3>No webhooks received yet</h3>
+      <p>Point your inventory system at <span class="mono">POST /webhooks/stock</span> with the shared secret header.</p>
+    </div>
+    {% endif %}
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  // Relative times, rendered in the viewer's own timezone.
+  var rtf = "RelativeTimeFormat" in Intl ? new Intl.RelativeTimeFormat(undefined, { numeric: "auto", style: "short" }) : null;
+  var abs = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+  function rel(date) {
+    var diff = (date.getTime() - Date.now()) / 1000, a = Math.abs(diff);
+    if (!rtf) return abs.format(date);
+    if (a < 45) return diff > 0 ? "in a few seconds" : "just now";
+    if (a < 3600) return rtf.format(Math.round(diff / 60), "minute");
+    if (a < 86400) return rtf.format(Math.round(diff / 3600), "hour");
+    if (a < 86400 * 7) return rtf.format(Math.round(diff / 86400), "day");
+    return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(date);
+  }
+  function paintTimes() {
+    document.querySelectorAll("time[data-rel]").forEach(function (el) {
+      var d = new Date(el.getAttribute("datetime"));
+      if (isNaN(d)) return;
+      el.textContent = rel(d);
+      el.title = abs.format(d);
+    });
+  }
+  paintTimes();
+  setInterval(paintTimes, 30000);
+
+  // Live mode: reload every 15s while the tab is visible and the user isn't typing.
+  var KEY = "bis-admin-live", toggle = document.getElementById("live-toggle"), sw = document.getElementById("live-status"), timer = null;
+  function read() { try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; } }
+  function write(v) { try { localStorage.setItem(KEY, v ? "1" : "0"); } catch (e) { /* storage unavailable */ } }
+  function schedule() {
+    clearTimeout(timer);
+    if (!toggle.checked) return;
+    timer = setTimeout(function () {
+      var typing = document.activeElement && document.activeElement.matches("input, textarea");
+      if (document.visibilityState === "visible" && !typing) location.reload(); else schedule();
+    }, 15000);
+  }
+  function apply() { sw.classList.toggle("is-live", toggle.checked); schedule(); }
+  toggle.checked = read();
+  apply();
+  toggle.addEventListener("change", function () { write(toggle.checked); apply(); });
+})();
+</script>
+</body>
+</html>

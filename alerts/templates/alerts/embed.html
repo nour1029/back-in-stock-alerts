@@ -1,0 +1,287 @@
+{% load ui %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Get notified{% if product %}: {{ product.name }}{% endif %} · {{ store_name }}</title>
+<style>
+  :root {
+    color-scheme: light;
+    --accent: {{ accent|default:"#047857" }};
+    --on-accent: #ffffff;
+    --text: #0f172a; --text-2: #475569; --text-3: #64748b;
+    --surface: #ffffff; --surface-2: #f6f7f9; --border: #e3e8ee; --border-strong: #cbd5e1;
+    --bad: #b91c1c; --bad-soft: #fef2f2; --ok-soft: #ecfdf5; --ok-text: #065f46;
+    --radius: 12px; --radius-sm: 8px;
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ease: cubic-bezier(.2, .8, .2, 1);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body { color: var(--text); font: 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
+  .icon { flex: none; }
+  .widget {
+    max-width: 440px; margin: 0 auto; padding: 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .product { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .product__img { width: 56px; height: 56px; border-radius: var(--radius-sm); object-fit: cover; background: var(--surface-2); flex: none; }
+  .product__img--blank { display: grid; place-items: center; color: var(--text-3); }
+  .product__name { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+  .product__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: 13px; color: var(--text-2); }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--text-2); }
+  .chip--ok { background: var(--ok-soft); color: var(--ok-text); }
+  .sku { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; color: var(--text-3); }
+  h1 { margin: 0; font-size: 18px; line-height: 1.3; letter-spacing: -.01em; }
+  .lede { margin: 6px 0 16px; color: var(--text-2); font-size: 14px; }
+  .field { margin-bottom: 12px; }
+  label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+  .hint { margin: 6px 0 0; font-size: 12px; color: var(--text-3); }
+  input {
+    width: 100%; height: 44px; padding: 0 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong); background: #fff; color: var(--text);
+    font: 16px/1 var(--font); transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  input::placeholder { color: #94a3b8; }
+  input:hover { border-color: #94a3b8; }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  input[aria-invalid="true"] { border-color: var(--bad); }
+  input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(185, 28, 28, .18); }
+  .error { display: flex; gap: 6px; align-items: flex-start; margin: 6px 0 0; font-size: 13px; color: var(--bad); }
+  .error[hidden] { display: none; }
+  .btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 44px; margin-top: 4px; border: 0; border-radius: var(--radius-sm);
+    background: var(--accent); color: var(--on-accent); font: 600 15px/1 var(--font); cursor: pointer;
+    transition: filter .15s var(--ease), transform .1s var(--ease); touch-action: manipulation;
+  }
+  .btn:hover { filter: brightness(.92); }
+  .btn:active { transform: scale(.985); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn[aria-busy="true"] { cursor: progress; }
+  .btn[aria-busy="true"] .btn__label { opacity: 0; }
+  .spinner { position: absolute; width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0; animation: spin .7s linear infinite; }
+  .btn[aria-busy="true"] .spinner { opacity: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .alert { display: flex; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bad-soft); color: var(--bad); font-size: 13px; }
+  .alert[hidden] { display: none; }
+  .fine { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; font-size: 12px; color: var(--text-3); }
+
+  /* Result state */
+  .result { text-align: center; padding: 8px 4px 4px; animation: rise .28s var(--ease) both; }
+  .result[hidden] { display: none; }
+  .result__badge { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 12px; border-radius: 50%; background: var(--ok-soft); color: var(--ok-text); }
+  .result__badge--info { background: #eff6ff; color: #1d4ed8; }
+  .result p { margin: 6px auto 0; max-width: 34ch; color: var(--text-2); font-size: 14px; }
+  .result strong { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+  .result h1:focus { outline: none; }
+  .link { margin-top: 14px; padding: 6px 8px; border: 0; background: none; color: var(--text-2); font: 500 13px var(--font); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .link:hover { color: var(--text); }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 360px) { .widget { padding: 16px; } }
+  @media (prefers-reduced-motion: reduce) { .result, .spinner { animation-duration: .01ms; } .spinner { animation: none; } }
+</style>
+</head>
+<body>
+<main class="widget" id="widget">
+  {% if product or sku %}
+  <div class="product">
+    {% if product.image %}
+      <img class="product__img" src="{{ product.image }}" alt="" width="56" height="56" loading="lazy" decoding="async">
+    {% else %}
+      <div class="product__img product__img--blank">{% icon "package" 22 %}</div>
+    {% endif %}
+    <div>
+      <p class="product__name">{{ product.name|default:sku }}</p>
+      <div class="product__meta">
+        {% if product|money %}<span>{{ product|money }}</span>{% endif %}
+        {% if product.in_stock %}<span class="chip chip--ok">{% icon "check" 12 %}In stock</span>{% else %}<span class="chip">Sold out</span>{% endif %}
+        <span class="sku">{{ product.sku|default:sku }}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <section id="form-view" aria-labelledby="title">
+    <h1 id="title">{% if product.in_stock %}Want a heads-up next time?{% else %}Get notified when it’s back{% endif %}</h1>
+    <p class="lede">{% if product.in_stock %}It’s available right now, but leave your email and we’ll tell you if it sells out and comes back.{% else %}Leave your email and we’ll send you one message the moment it’s restocked.{% endif %}</p>
+
+    <div class="alert" id="form-alert" role="alert" hidden>{% icon "alert" 16 %}<span></span></div>
+
+    <form id="notify-form" action="{{ api_url }}" method="post" novalidate>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false"
+               placeholder="you@example.com" required maxlength="254" aria-describedby="email-error">
+        <p class="error" id="email-error" hidden>{% icon "alert" 14 %}<span></span></p>
+      </div>
+      {% if sku %}
+        <input type="hidden" name="sku" value="{{ sku }}">
+      {% else %}
+      <div class="field">
+        <label for="sku">Product code (SKU)</label>
+        <input id="sku" name="sku" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
+               placeholder="e.g. TEE-ORG-WHT-M" required maxlength="64" aria-describedby="sku-hint sku-error">
+        <p class="hint" id="sku-hint">You’ll find it on the product page, under the title.</p>
+        <p class="error" id="sku-error" hidden>{% icon "alert" 14 %}<span></span></p>
+      </div>
+      {% endif %}
+      <button class="btn" type="submit" id="submit">
+        <span class="btn__label">Notify me</span><span class="spinner" aria-hidden="true"></span>
+      </button>
+    </form>
+    <p class="fine">{% icon "lock" 12 %}One email about this item. We never share your address.</p>
+  </section>
+
+  <section class="result" id="result-view" role="status" aria-live="polite" hidden>
+    <div class="result__badge" id="result-badge">{% icon "check" 24 %}</div>
+    <h1 id="result-title" tabindex="-1"></h1>
+    <p id="result-body"></p>
+    <button class="link" type="button" id="reset">Use a different email</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var nameEl = document.querySelector(".product__name");
+  var PRODUCT_NAME = nameEl ? nameEl.textContent.trim() : "";
+
+  var form = document.getElementById("notify-form");
+  var formView = document.getElementById("form-view");
+  var resultView = document.getElementById("result-view");
+  var submit = document.getElementById("submit");
+  var formAlert = document.getElementById("form-alert");
+
+  // Optional ?accent= colour: pick readable text for it.
+  (function contrastForAccent() {
+    var hex = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim().replace("#", "");
+    if (!/^[0-9a-f]{6}$/i.test(hex)) return;
+    var c = [0, 2, 4].map(function (i) {
+      var v = parseInt(hex.substr(i, 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    var lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    document.documentElement.style.setProperty("--on-accent", lum > 0.4 ? "#0f172a" : "#ffffff");
+  })();
+
+  // Keep the host iframe sized to the content.
+  function postHeight() {
+    try {
+      var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+      window.parent.postMessage({ type: "back-in-stock:resize", height: h }, "*");
+    } catch (e) { /* not framed */ }
+  }
+  if ("ResizeObserver" in window) new ResizeObserver(postHeight).observe(document.body);
+  window.addEventListener("load", postHeight);
+
+  function setFieldError(name, message) {
+    var input = form.elements[name];
+    var box = document.getElementById(name + "-error");
+    if (!input || !box) return false;
+    input.setAttribute("aria-invalid", message ? "true" : "false");
+    box.hidden = !message;
+    box.querySelector("span").textContent = message || "";
+    return true;
+  }
+  function setAlert(message) {
+    formAlert.hidden = !message;
+    formAlert.querySelector("span").textContent = message || "";
+  }
+  function clearErrors() { setFieldError("email", ""); setFieldError("sku", ""); setAlert(""); }
+
+  function validate() {
+    var ok = true, first = null;
+    var email = form.elements.email;
+    if (!email.value.trim()) { setFieldError("email", "Enter your email address."); ok = false; first = first || email; }
+    else if (!email.checkValidity() || !/^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/.test(email.value.trim())) { setFieldError("email", "That doesn’t look like an email address. Check for typos."); ok = false; first = first || email; }
+    var sku = form.elements.sku;
+    if (sku && sku.type !== "hidden" && !sku.value.trim()) { setFieldError("sku", "Enter the product code."); ok = false; first = first || sku; }
+    if (first) first.focus();
+    return ok;
+  }
+
+  ["email", "sku"].forEach(function (name) {
+    var el = form.elements[name];
+    if (el && el.type !== "hidden") el.addEventListener("input", function () { if (el.getAttribute("aria-invalid") === "true") setFieldError(name, ""); });
+  });
+
+  function busy(on) {
+    submit.setAttribute("aria-busy", on ? "true" : "false");
+    submit.disabled = on;
+  }
+
+  function showResult(kind, data, email) {
+    var name = (data && data.product && data.product.name) || PRODUCT_NAME || "this item";
+    var title = document.getElementById("result-title");
+    var body = document.getElementById("result-body");
+    var badge = document.getElementById("result-badge");
+    badge.className = "result__badge" + (kind === "existing" ? " result__badge--info" : "");
+    var strongEmail = document.createElement("strong"); strongEmail.textContent = email;
+    var strongName = document.createElement("strong"); strongName.textContent = name;
+    body.textContent = "";
+    if (kind === "existing") {
+      title.textContent = "You’re already on the list";
+      body.append("We’ll email ", strongEmail, " as soon as ", strongName, " is back. No need to sign up twice.");
+    } else if (data && data.in_stock === true) {
+      title.textContent = "Good news: it’s in stock";
+      body.append(strongName, " is available right now. We’ve saved your alert too, so ", strongEmail, " will hear from us if it sells out and returns.");
+    } else {
+      title.textContent = "You’re on the list";
+      body.append("We’ll email ", strongEmail, " the moment ", strongName, " is back in stock. Just one email, nothing else.");
+    }
+    formView.hidden = true;
+    resultView.hidden = false;
+    title.focus({ preventScroll: true });
+    window.parent.postMessage({ type: "back-in-stock:subscribed", sku: data && data.sku, created: kind !== "existing" }, "*");
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    clearErrors();
+    if (!validate()) return;
+    var email = form.elements.email.value.trim();
+    var payload = { email: email, sku: form.elements.sku.value.trim() };
+    var controller = "AbortController" in window ? new AbortController() : null;
+    var timer = controller && setTimeout(function () { controller.abort(); }, 12000);
+    busy(true);
+    fetch(form.action, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller ? controller.signal : undefined,
+      credentials: "omit"
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) { return { status: res.status, data: data }; });
+    }).then(function (r) {
+      if (r.status === 201 || (r.status === 200 && r.data.created !== false)) return showResult("created", r.data, email);
+      if (r.status === 200) return showResult("existing", r.data, email);
+      if (r.status === 400) {
+        var field = r.data.error === "invalid_email" ? "email" : r.data.error === "invalid_sku" ? "sku" : null;
+        var msg = r.data.message || "Please check your details and try again.";
+        if (!(field && setFieldError(field, msg))) setAlert(msg);
+        var bad = field && form.elements[field];
+        if (bad && bad.type !== "hidden") bad.focus();
+        return;
+      }
+      if (r.status === 429) return setAlert("Too many attempts. Please wait a moment and try again.");
+      setAlert("Something went wrong on our side. Please try again in a moment.");
+    }).catch(function () {
+      setAlert("We couldn’t reach the server. Check your connection and try again.");
+    }).finally(function () {
+      if (timer) clearTimeout(timer);
+      busy(false);
+    });
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    resultView.hidden = true;
+    formView.hidden = false;
+    form.elements.email.value = "";
+    form.elements.email.focus();
+  });
+})();
+</script>
+</body>
+</html>

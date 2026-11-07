@@ -1,9 +1,124 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ product_name }} is back in stock</title></head>
-<body>
-<p>Good news: <strong>{{ product_name }}</strong> ({{ sku }}) is back in stock at {{ store_name }}.</p>
-{% if image_url %}<p><img src="{{ image_url }}" alt="{{ product_name }}" width="300"></p>{% endif %}
-{% if price_display %}<p>{{ price_display }}</p>{% endif %}
-<p><a href="{{ product_url }}">Shop now</a></p>
-<p>You asked us to tell you on {{ requested_at|date:"j M Y" }}. Sent to {{ email }}.</p>
-</body></html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>{{ product_name }} is back in stock</title>
+<style>
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  a { color: #047857; }
+  @media only screen and (max-width: 620px) {
+    .container { width: 100% !important; }
+    .px { padding-left: 20px !important; padding-right: 20px !important; }
+    .h1 { font-size: 24px !important; line-height: 30px !important; }
+    .btn a { display: block !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;">
+  <!-- Preheader: shown as the inbox preview line -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f3f4f6;opacity:0;">
+    Good news: the item you asked about is available again{% if quantity and quantity <= 10 %}, but only {{ quantity }} left{% endif %}.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3f4f6;">
+    <tr>
+      <td align="center" style="padding:32px 12px;">
+        <table role="presentation" class="container" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;">
+
+          <!-- Store header -->
+          <tr>
+            <td class="px" style="padding:0 8px 20px 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#0f172a;">
+              {{ store_name }}
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+                {% if image_url %}
+                <tr>
+                  <td style="padding:0;background-color:#f1f4f7;border-radius:14px 14px 0 0;" align="center">
+                    <a href="{{ product_url }}" style="text-decoration:none;">
+                      <img src="{{ image_url }}" width="558" alt="{{ product_name }}" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:14px 14px 0 0;">
+                    </a>
+                  </td>
+                </tr>
+                {% endif %}
+
+                <tr>
+                  <td class="px" style="padding:28px 36px 8px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background-color:#ecfdf5;border-radius:999px;padding:5px 12px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#065f46;">
+                          &#9679;&nbsp; Back in stock
+                        </td>
+                      </tr>
+                    </table>
+                    <h1 class="h1" style="margin:16px 0 0 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.02em;color:#0f172a;">
+                      {{ product_name }} is back
+                    </h1>
+                    <p style="margin:12px 0 0 0;font-size:16px;line-height:26px;color:#475569;">
+                      You asked us to let you know when this was available again, and it is. Popular items tend to sell out quickly, so if you still want it, now’s a good time.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Product summary row -->
+                <tr>
+                  <td class="px" style="padding:20px 36px 0 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;">
+                      <tr>
+                        <td style="padding:14px 0;font-size:14px;line-height:20px;color:#0f172a;font-weight:600;">
+                          {{ product_name }}
+                          <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:18px;font-weight:400;color:#64748b;">{{ sku }}</div>
+                        </td>
+                        <td align="right" style="padding:14px 0;font-size:16px;line-height:20px;color:#0f172a;font-weight:700;white-space:nowrap;">
+                          {{ price_display }}
+                          {% if quantity and quantity <= 10 %}
+                          <div style="font-size:12px;line-height:18px;font-weight:600;color:#b45309;">Only {{ quantity }} left</div>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- CTA (bulletproof button) -->
+                <tr>
+                  <td class="px" style="padding:24px 36px 32px 36px;">
+                    <table role="presentation" class="btn" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#047857" style="border-radius:10px;background-color:#047857;">
+                          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{ product_url }}" style="height:50px;v-text-anchor:middle;width:486px;" arcsize="20%" stroke="f" fillcolor="#047857"><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Shop it now</center></v:roundrect><![endif]-->
+                          <!--[if !mso]><!-->
+                          <a href="{{ product_url }}" style="display:inline-block;width:100%;padding:15px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">Shop it now &rarr;</a>
+                          <!--<![endif]-->
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td class="px" style="padding:20px 24px 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7280;text-align:center;">
+              You’re getting this one-time email because you asked {{ store_name }} to notify
+              <span style="color:#374151;">{{ email }}</span> when this item was back in stock{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %}.
+              Your alert is now complete. We won’t email you about it again.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
