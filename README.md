@@ -33,6 +33,7 @@ Optional:
 | `STORE_NAME` | `Common Goods` |
 | `EMAIL_FROM` | `"{STORE_NAME} <alerts@example.com>"` |
 | `PRODUCT_URL_TEMPLATE` | `https://example.com/products/{sku}` (the "Shop now" link in the email) |
+| `DATABASE_URL` | Unset: SQLite in `DATA_DIR`. Set (e.g. `postgres://…`): Postgres instead |
 | `DATA_DIR` | `./data` locally, `/data` in Docker (holds the SQLite database) |
 | `ALLOWED_HOSTS` | `*` |
 | `CSRF_TRUSTED_ORIGINS` | ngrok and Railway domains (comma-separated `https://…` origins) |
@@ -47,9 +48,13 @@ docker build -t back-in-stock .
 docker run --env-file .env -p 8000:8000 -v bis-data:/data back-in-stock
 ```
 
-The container runs migrations and then serves on `$PORT`. The `-v bis-data:/data` volume keeps the
-database across container restarts and re-creations. Without it, data survives `docker restart` but not
-`docker rm`.
+The container runs migrations and then serves on `$PORT`. With only the five variables it uses SQLite in
+`/data`, a Docker volume: data survives `docker restart`, and with `-v bis-data:/data` it also survives
+re-creating the container.
+
+**Hosted demo (Render):** Render's free web services have no persistent disk and restart on every deploy and
+after sleeping, so SQLite there would lose its data. The live demo sets `DATABASE_URL` to a Render Postgres
+database instead.
 
 Locally (Python 3.12):
 
@@ -107,7 +112,9 @@ Every guarantee lives in the database, so it holds across threads, retries and r
 - **Reconciliation.** Every 60 s (and once at startup) the worker compares the open requests with the live
   catalogue, plus per-SKU lookups for custom SKUs. Any waiting request whose product has stock gets its
   email. This catches restocks whose webhooks were lost or arrived while the app was down.
-- **Persistence.** Requests, events, attempts and schedules all live in SQLite (WAL mode, `/data` volume).
+- **Persistence.** Requests, events, attempts and schedules all live in the database: SQLite (WAL mode,
+  `/data` volume) by default, or Postgres when `DATABASE_URL` is set. Every guarantee above is a database
+  constraint or conditional update, so it holds the same on both.
   After a restart the worker carries on from exactly where it stopped.
 
 Gunicorn runs one worker with 8 threads. That keeps a single SQLite writer process and a single notifier

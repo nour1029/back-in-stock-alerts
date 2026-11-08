@@ -13,6 +13,9 @@ RUN useradd --create-home --uid 10001 app \
     && mkdir -p /data \
     && chown app:app /data
 
+# SQLite lives here when DATABASE_URL isn't set: a volume keeps it across restarts and re-creates.
+VOLUME ["/data"]
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 

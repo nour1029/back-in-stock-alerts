@@ -105,19 +105,31 @@ TEMPLATES = [
     }
 ]
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DATA_DIR / "db.sqlite3",
-        "OPTIONS": {
-            "timeout": 20,
-            "transaction_mode": "IMMEDIATE",
-            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
-        },
-        # A file (not :memory:) so concurrency tests see real SQLite locking.
-        "TEST": {"NAME": str(DATA_DIR / "test_db.sqlite3")},
+# DATABASE_URL set (e.g. Render, whose container disk is wiped on every deploy and wake-up) → Postgres.
+# Not set (the brief's `docker run` with only the five variables) → SQLite in DATA_DIR, a Docker volume.
+DATABASE_URL = env("DATABASE_URL")
+if DATABASE_URL:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL, conn_max_age=60, conn_health_checks=True, ssl_require=env("DATABASE_SSL", "") == "require"
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": DATA_DIR / "db.sqlite3",
+            "OPTIONS": {
+                "timeout": 20,
+                "transaction_mode": "IMMEDIATE",
+                "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+            },
+            # A file (not :memory:) so concurrency tests see real SQLite locking.
+            "TEST": {"NAME": str(DATA_DIR / "test_db.sqlite3")},
+        }
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
