@@ -142,6 +142,21 @@ class SignupTests(FakesMixin, TestCase):
         self.assertEqual(subjects["now@example.com"], "Chef's Knife, 20 cm is in stock now")
         self.assertEqual(subjects["later@example.com"], "Chef's Knife, 20 cm is back in stock")
 
+    def test_email_shows_the_catalogue_image_as_a_thumbnail(self):
+        self.store.stock["KNF-CHF-20"] = 5
+        self.signup()
+        notifier.send_due_requests()
+        html = self.resend.delivered[0]["html"]
+        self.assertIn('src="https://img.test/KNF-CHF-20.jpg"', html)
+        self.assertIn('alt="Chef&#x27;s Knife, 20 cm"', html)
+        self.assertEqual(html.count("<img"), 1)  # a thumbnail only, no banner
+
+    def test_email_without_a_catalogue_image_has_no_img(self):
+        self.store.stock["Custom-1"] = 3  # not in the catalogue: no name, no image
+        self.signup(sku="Custom-1")
+        notifier.send_due_requests()
+        self.assertNotIn("<img", self.resend.delivered[0]["html"])
+
     def test_in_stock_duplicate_signup_sends_once(self):
         self.store.stock["KNF-CHF-20"] = 5
         self.signup()

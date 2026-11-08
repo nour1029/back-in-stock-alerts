@@ -112,7 +112,11 @@
 <main class="widget" id="widget">
   {% if product or sku %}
   <div class="product">
-    <div class="product__img product__img--blank" aria-hidden="true">{% icon "package" 22 %}</div>
+    {% if product.image %}
+      <img class="product__img" src="{{ product.image }}" alt="" width="56" height="56" loading="lazy" decoding="async">
+    {% else %}
+      <div class="product__img product__img--blank" aria-hidden="true">{% icon "package" 22 %}</div>
+    {% endif %}
     <div>
       <p class="product__name">{{ product.name|default:sku }}</p>
       <div class="product__meta">

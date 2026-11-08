@@ -245,7 +245,7 @@
               <div class="cust"><span class="avatar" aria-hidden="true">{{ r.email|initial }}</span><span class="email" title="{{ r.email }}">{{ r.email }}</span></div>
             </td>
             <td data-label="Product"><div class="cell"><div class="prod">
-                <span class="thumb thumb--blank" aria-hidden="true">{% icon "package" 16 %}</span>
+                {% if r.product.image %}<img class="thumb" src="{{ r.product.image }}" alt="" width="36" height="36" loading="lazy" decoding="async">{% else %}<span class="thumb thumb--blank" aria-hidden="true">{% icon "package" 16 %}</span>{% endif %}
                 <span><span class="prod__name">{{ r.product.name|default:r.product_name|default:r.sku }}</span><span class="prod__sku mono">{{ r.sku }}</span></span>
               </div></div></td>
             <td data-label="Status"><div class="cell">{% status_pill r %}
