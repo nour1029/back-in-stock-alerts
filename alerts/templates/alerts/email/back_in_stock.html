@@ -111,8 +111,8 @@
           <!-- Footer -->
           <tr>
             <td class="px" style="padding:20px 24px 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7280;text-align:center;">
-              You’re getting this one-time email because you asked {{ store_name }} to notify
-              <span style="color:#374151;">{{ email }}</span> when this item was back in stock{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %}.
+              You’re getting this one-time email because{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %} you asked {{ store_name }} to notify
+              <span style="color:#374151;">{{ email }}</span> when this item was back in stock.
               Your alert is now complete. We won’t email you about it again.
             </td>
           </tr>

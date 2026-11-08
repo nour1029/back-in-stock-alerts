@@ -11,5 +11,5 @@ Shop it now: {{ product_url }}
 Popular items tend to sell out quickly, so if you still want it, now's a good time.
 
 --
-You're getting this one-time email because you asked {{ store_name }} to notify {{ email }} when this item was back in stock{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %}. Your alert is now complete. We won't email you about it again.
+You're getting this one-time email because{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %} you asked {{ store_name }} to notify {{ email }} when this item was back in stock. Your alert is now complete. We won't email you about it again.
 {% endautoescape %}
