@@ -129,8 +129,8 @@
   {% endif %}
 
   <section id="form-view" aria-labelledby="title">
-    <h1 id="title">{% if product.in_stock %}Want a heads-up next time?{% else %}Get notified when it’s back{% endif %}</h1>
-    <p class="lede">{% if product.in_stock %}It’s available right now, but leave your email and we’ll tell you if it sells out and comes back.{% else %}Leave your email and we’ll send you one message the moment it’s restocked.{% endif %}</p>
+    <h1 id="title">{% if product.in_stock %}Good news, it’s in stock now{% else %}Get notified when it’s back{% endif %}</h1>
+    <p class="lede">{% if product.in_stock %}Leave your email and we’ll send you a link to it right away.{% else %}Leave your email and we’ll send you one message the moment it’s restocked.{% endif %}</p>
 
     <div class="alert" id="form-alert" role="alert" hidden>{% icon "alert" 16 %}<span></span></div>
 
@@ -250,8 +250,8 @@
       title.textContent = "You’re already on the list";
       body.append("We’ll email ", strongEmail, " as soon as ", strongName, " is back. No need to sign up twice.");
     } else if (data && data.in_stock === true) {
-      title.textContent = "Good news: it’s in stock";
-      body.append(strongName, " is available right now. We’ve saved your alert too, so ", strongEmail, " will hear from us if it sells out and returns.");
+      title.textContent = "Good news, it’s in stock now";
+      body.append("We’re emailing ", strongEmail, " a link to ", strongName, " right now, so you can grab it before it sells out.");
     } else {
       title.textContent = "You’re on the list";
       body.append("We’ll email ", strongEmail, " the moment ", strongName, " is back in stock. Just one email, nothing else.");

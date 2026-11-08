@@ -11,6 +11,7 @@ from django.core.exceptions import RequestDataTooBig
 from django.db import IntegrityError, transaction
 from django.db.models import F
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from alerts import notifier
@@ -89,7 +90,7 @@ def create_request(request):
         return _error("invalid_sku")
     sku = stock.canonical_sku(sku)
 
-    # Live stock: decides whether this person must first see the item sell out.
+    # Live stock: if it's in stock right now, the customer is emailed straight away.
     quantity: int | None = None
     product: dict | None = None
     try:
@@ -113,10 +114,27 @@ def create_request(request):
     )
     if alert is None:  # pathological: kept colliding; let the client retry
         return _cors(JsonResponse({"error": "busy", "message": "Please try again."}, status=503))
+    if in_stock:
+        _queue_now(alert)
     if product is not None:
         product = {**product, "sku": alert.sku}
     payload = _request_payload(alert, created, in_stock, product)
     return _cors(JsonResponse(payload, status=201 if created else 200))
+
+
+def _queue_now(alert: AlertRequest) -> None:
+    """In stock at sign-up: send now rather than waiting for a sell-out and restock.
+
+    Conditional on WAITING with nothing queued, so a duplicate sign-up never queues a
+    second send. The notifier still re-checks stock and claims the row before sending.
+    """
+    now = timezone.now()
+    queued = AlertRequest.objects.filter(
+        pk=alert.pk, status=AlertRequest.Status.WAITING, due_at__isnull=True
+    ).update(due_at=now, updated_at=now)
+    if queued:
+        alert.due_at = now
+        notifier.wake()
 
 
 def _create_or_get_open(**fields) -> tuple[AlertRequest | None, bool]:

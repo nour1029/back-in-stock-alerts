@@ -88,8 +88,6 @@ Every guarantee lives in the database, so it holds across threads, retries and r
 - **Re-check before sending.** Stock is checked again just before each send, because retries and backoff
   leave time for an item to sell out. If it has sold out, the request goes back to waiting for the next
   restock. If the stock API can't be reached, the send is postponed. It never sends without a fresh confirmation.
-- **Signed up while in stock.** These customers aren't emailed immediately. They hear about it only after
-  the item has been seen out of stock and has come back.
 
 **No missed emails**
 
@@ -103,9 +101,12 @@ Every guarantee lives in the database, so it holds across threads, retries and r
   processed, that event is retried the same way.
 - **Stale-claim recovery.** A request left in `sending` (the process died mid-send) goes back in the queue:
   immediately on startup, or after 2 minutes otherwise. This is safe because of the idempotency key.
+- **Signed up while in stock.** If the stock API says the item is available at sign-up, the email is
+  queued at once and the form says "Good news, it's in stock now". The customer isn't left waiting for a
+  sell-out and restock that may never happen.
 - **Reconciliation.** Every 60 s (and once at startup) the worker compares the open requests with the live
-  catalogue, plus per-SKU lookups for custom SKUs. This catches restocks whose webhooks were lost or arrived
-  while the app was down.
+  catalogue, plus per-SKU lookups for custom SKUs. Any waiting request whose product has stock gets its
+  email. This catches restocks whose webhooks were lost or arrived while the app was down.
 - **Persistence.** Requests, events, attempts and schedules all live in SQLite (WAL mode, `/data` volume).
   After a restart the worker carries on from exactly where it stopped.
 

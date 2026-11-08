@@ -321,10 +321,10 @@ def repair_sku_casing(skus, catalogue: dict[str, dict]) -> int:
 
 
 def reconcile() -> int:
-    """Safety net for lost webhooks: compare waiting requests with the live catalogue.
+    """Safety net: any waiting request whose product has stock right now gets its email.
 
-    Only requests that have seen the item out of stock are queued, so a customer who
-    signed up while it was in stock hears nothing until it sells out and comes back.
+    Runs at startup and every RECONCILE_SECONDS. It covers restocks whose webhooks never
+    arrived, and sign-ups made while the item was in stock whose immediate send was lost.
     """
     global _reconcile_cursor
     skus = sorted(
@@ -367,9 +367,9 @@ def reconcile() -> int:
     for sku, quantity in levels.items():
         waiting = AlertRequest.objects.filter(sku=sku, status=W.WAITING, due_at__isnull=True)
         if quantity > 0:
-            queued = waiting.filter(out_of_stock_seen=True).update(due_at=now, updated_at=now)
+            queued = waiting.update(due_at=now, updated_at=now)
             if queued:
-                logger.warning("reconcile: %s is in stock (%d); queued %d request(s) a webhook missed", sku, quantity, queued)
+                logger.warning("reconcile: %s is in stock (%d); queued %d waiting request(s)", sku, quantity, queued)
                 queued_total += queued
         else:
             waiting.filter(out_of_stock_seen=False, created_at__lt=checked_at).update(

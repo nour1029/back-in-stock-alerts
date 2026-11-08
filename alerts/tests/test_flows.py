@@ -117,13 +117,25 @@ class SignupTests(FakesMixin, TestCase):
         self.assertEqual(response.json()["sku"], "Custom-Sku.1")
         self.assertIsNone(response.json()["product"])
 
-    def test_in_stock_signup_is_not_marked_out_of_stock(self):
+    def test_in_stock_signup_is_emailed_right_away(self):
         self.store.stock["KNF-CHF-20"] = 5
         response = self.signup()
         self.assertIs(response.json()["in_stock"], True)
         alert = AlertRequest.objects.get()
-        self.assertFalse(alert.out_of_stock_seen)
         self.assertEqual(alert.stock_at_signup, 5)
+        self.assertIsNotNone(alert.due_at)  # queued at sign-up, no restock needed
+        notifier.send_due_requests()
+        self.assertEqual([e["to"][0] for e in self.resend.delivered], ["ada@example.com"])
+        self.assertEqual(AlertRequest.objects.get().status, W.NOTIFIED)
+
+    def test_in_stock_duplicate_signup_sends_once(self):
+        self.store.stock["KNF-CHF-20"] = 5
+        self.signup()
+        self.assertEqual(self.signup().status_code, 200)
+        notifier.send_due_requests()
+        notifier.reconcile()
+        notifier.send_due_requests()
+        self.assertEqual(len(self.resend.delivered), 1)
 
     def test_stock_api_down_is_not_fatal(self):
         self.store.down = True
@@ -366,25 +378,27 @@ class RecoveryTests(FakesMixin, TestCase):
         self.assertEqual(notifier.recover_stale_claims(recover_all=True), 1)
         self.assertEqual(AlertRequest.objects.get().status, W.WAITING)
 
-    def test_reconciliation_respects_out_of_stock_seen(self):
+    def test_reconciliation_emails_every_waiting_request_with_stock(self):
+        self.signup("missed@example.com", sku="MUG-STN-SAGE")  # sold out at sign-up
         self.store.stock["KNF-CHF-20"] = 5
-        self.signup("instock@example.com")  # signed up while in stock
-        self.store.stock["MUG-STN-SAGE"] = 0
-        self.signup("missed@example.com", sku="MUG-STN-SAGE")
-        # MUG restocks but the webhook is lost.
-        self.store.stock["MUG-STN-SAGE"] = 7
+        self.signup("instock@example.com")  # in stock at sign-up...
+        AlertRequest.objects.filter(email="instock@example.com").update(due_at=None)  # ...but that send was lost
+        self.store.stock["MUG-STN-SAGE"] = 7  # restock whose webhook never arrives
         notifier.reconcile()
         notifier.send_due_requests()
-        self.assertEqual([e["to"][0] for e in self.resend.delivered], ["missed@example.com"])
-        self.assertEqual(AlertRequest.objects.get(email="instock@example.com").due_at, None)
-        # Knife sells out and comes back, both webhooks lost: reconciliation still delivers.
-        self.store.stock["KNF-CHF-20"] = 0
-        notifier.reconcile()
-        self.assertTrue(AlertRequest.objects.get(email="instock@example.com").out_of_stock_seen)
-        self.store.stock["KNF-CHF-20"] = 9
-        notifier.reconcile()
+        self.assertEqual(
+            sorted(e["to"][0] for e in self.resend.delivered), ["instock@example.com", "missed@example.com"]
+        )
+        notifier.reconcile()  # running again sends nothing new
         notifier.send_due_requests()
         self.assertEqual(len(self.resend.delivered), 2)
+
+    def test_reconciliation_leaves_sold_out_requests_waiting(self):
+        self.signup()
+        notifier.reconcile()
+        notifier.send_due_requests()
+        self.assertEqual(self.resend.delivered, [])
+        self.assertIsNone(AlertRequest.objects.get().due_at)
 
     def test_reconcile_repairs_sku_casing_from_catalogue_outage(self):
         self.store.down = True
