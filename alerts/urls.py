@@ -14,4 +14,5 @@ urlpatterns = [
     path("admin/logout", admin.logout, name="admin_logout"),
     path("admin/requests/<uuid:public_id>/retry", admin.retry, name="admin_retry"),
     path("admin/export.csv", admin.export_csv, name="admin_export"),
+    path("admin/email-preview", admin.email_preview, name="admin_email_preview"),
 ]

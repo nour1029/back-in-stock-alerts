@@ -1,0 +1,175 @@
+{% load ui %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Email preview · {{ store_name }} Restock alerts</title>
+{% include "alerts/_tokens.html" %}
+<style>
+  .topbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--border); }
+  .topbar__inner { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; }
+  .brand__name { font-weight: 700; font-size: 14px; letter-spacing: -.01em; line-height: 1.2; white-space: nowrap; }
+  .brand__sub { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .topbar__actions { margin-left: auto; display: flex; gap: 6px; }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; }
+  h1 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.02em; font-weight: 800; }
+  .lede { margin: 4px 0 24px; color: var(--text-2); font-size: 14px; }
+  .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 18px; }
+  .panel + .panel { margin-top: 16px; }
+  .panel h2 { margin: 0 0 14px; font-size: 14px; letter-spacing: -.01em; }
+  .field { margin-bottom: 14px; }
+  label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+  select, input[type=number] {
+    width: 100%; height: 40px; padding: 0 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 14px var(--font);
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .hint { margin: 6px 0 0; font-size: 12px; color: var(--text-3); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .preset { min-height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font: 600 12px var(--font); cursor: pointer; }
+  .preset:hover { color: var(--text); border-color: var(--text-3); }
+  .preset[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent-text); }
+  .btn--block { width: 100%; }
+
+  dl { margin: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px 10px; font-size: 13px; }
+  dt { color: var(--text-3); font-weight: 600; }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  details pre { margin: 12px 0 0; padding: 12px; max-height: 360px; overflow: auto; border-radius: var(--radius-sm); background: var(--surface-2); font: 12px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .stage__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .seg { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--surface-2); }
+  .seg button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font: 600 13px var(--font); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+  .inbox { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .inbox__avatar { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
+  .inbox__subject { font-weight: 700; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+  .inbox__from { font-size: 12px; color: var(--text-3); overflow-wrap: anywhere; }
+  .canvas { padding: 24px 16px; background: repeating-linear-gradient(45deg, var(--surface-2) 0 10px, var(--bg) 10px 20px); display: flex; justify-content: center; }
+  .canvas iframe { display: block; width: 390px; max-width: 100%; height: 900px; border: 0; border-radius: 12px; background: #f3f4f6; box-shadow: var(--shadow); transition: width .25s var(--ease); }
+
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .topbar__inner, main { padding-left: 16px; padding-right: 16px; } .btn__text { display: none; } .canvas { padding: 12px 0; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="brand" href="/admin">
+      <span class="mark">{% icon "bell" 18 %}</span>
+      <span class="brand__name">{{ store_name }}<span class="brand__sub">Restock alerts</span></span>
+    </a>
+    <div class="topbar__actions">
+      <a class="btn btn--ghost" href="/admin">{% icon "chevron-left" 16 %}<span class="btn__text">Back to dashboard</span></a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <h1>Email preview</h1>
+  <p class="lede">The exact email a customer receives, built by the same code the notifier uses. Nothing is sent.</p>
+
+  <div class="layout">
+    <div>
+      <form class="panel" method="get" action="/admin/email-preview" id="controls">
+        <h2>Scenario</h2>
+        <div class="field">
+          <label for="sku">Product</label>
+          <select id="sku" name="sku">
+            {% if not in_catalogue %}<option value="{{ sku }}" selected>{{ sku }} (not in catalogue)</option>{% endif %}
+            {% for p in catalogue %}
+              <option value="{{ p.sku }}" {% if p.sku == sku %}selected{% endif %}>{{ p.name|default:p.sku }}{% if p.in_stock %} · {{ p.quantity }} in stock{% else %} · sold out{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="qty">Stock in the email</label>
+          <input id="qty" name="qty" type="number" min="0" max="100000" inputmode="numeric" value="{{ qty }}" placeholder="Live stock{% if quantity is not None %} ({{ quantity }}){% endif %}">
+          <p class="hint">Leave blank for live stock. 10 or fewer shows “Only N left”.</p>
+          <div class="presets" role="group" aria-label="Quick stock levels">
+            <button class="preset" type="button" data-qty="" aria-pressed="{% if not qty %}true{% else %}false{% endif %}">Live</button>
+            <button class="preset" type="button" data-qty="3" aria-pressed="{% if qty == '3' %}true{% else %}false{% endif %}">Low (3)</button>
+            <button class="preset" type="button" data-qty="40" aria-pressed="{% if qty == '40' %}true{% else %}false{% endif %}">Plenty (40)</button>
+          </div>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">{% icon "refresh" 16 %}Update preview</button>
+      </form>
+
+      <section class="panel" aria-labelledby="meta-title">
+        <h2 id="meta-title">Message</h2>
+        <dl>
+          <dt>From</dt><dd>{{ payload.from }}</dd>
+          <dt>To</dt><dd>{{ payload.to|join:", " }}</dd>
+          <dt>Subject</dt><dd>{{ payload.subject }}</dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <details>
+          <summary>Plain-text version</summary>
+          <pre>{{ payload.text }}</pre>
+        </details>
+      </section>
+    </div>
+
+    <section class="stage" aria-label="Rendered email">
+      <div class="stage__bar">
+        <div class="inbox">
+          <span class="inbox__avatar" aria-hidden="true">{{ store_name|initial }}</span>
+          <div>
+            <div class="inbox__subject">{{ payload.subject }}</div>
+            <div class="inbox__from">{{ payload.from }} · to {{ payload.to|join:", " }}</div>
+          </div>
+        </div>
+        <div class="seg" role="group" aria-label="Preview width">
+          <button type="button" data-width="390" aria-pressed="true">{% icon "bag" 14 %}Phone</button>
+          <button type="button" data-width="680" aria-pressed="false">{% icon "inbox" 14 %}Desktop</button>
+        </div>
+      </div>
+      <div class="canvas">
+        <iframe id="email-frame" title="Email preview: {{ payload.subject }}" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" srcdoc="{{ payload.html|force_escape }}"></iframe>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var form = document.getElementById("controls");
+  var frame = document.getElementById("email-frame");
+
+  // Re-render as soon as a control changes.
+  form.elements.sku.addEventListener("change", function () { form.submit(); });
+  document.querySelectorAll(".preset").forEach(function (btn) {
+    btn.addEventListener("click", function () { form.elements.qty.value = btn.getAttribute("data-qty"); form.submit(); });
+  });
+
+  // Size the frame to the email, and open its links in a new tab.
+  function fit() {
+    try {
+      var doc = frame.contentDocument;
+      if (!doc || !doc.documentElement) return;
+      if (!doc.querySelector("base")) { var b = doc.createElement("base"); b.target = "_blank"; doc.head.appendChild(b); }
+      frame.style.height = doc.documentElement.scrollHeight + "px";
+    } catch (e) { /* cross-origin: keep default height */ }
+  }
+  frame.addEventListener("load", fit);
+
+  document.querySelectorAll(".seg button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+      frame.style.width = btn.getAttribute("data-width") + "px";
+      setTimeout(fit, 300);
+    });
+  });
+})();
+</script>
+</body>
+</html>

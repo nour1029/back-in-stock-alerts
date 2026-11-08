@@ -499,6 +499,24 @@ class PageAndAdminTests(FakesMixin, TestCase):
         self.assertEqual([r.email for r in response.context["page_obj"]], ["b@example.com"])
         self.assertEqual(response.context["page_obj"][0].product["name"], "Chef's Knife, 20 cm")
 
+    def test_email_preview_requires_admin(self):
+        response = self.client.get("/admin/email-preview")
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.context["next"], "/admin/email-preview")
+
+    def test_email_preview_renders_real_email_without_sending(self):
+        self.client.post("/admin/login", {"password": "admin-pw"})
+        response = self.client.get("/admin/email-preview?sku=knf-chf-20&qty=3")
+        self.assertEqual(response.status_code, 200)
+        payload = response.context["payload"]
+        self.assertEqual(payload["subject"], "Chef's Knife, 20 cm is back in stock")
+        self.assertIn("Only 3 left", payload["html"])
+        self.assertIn("Only 3 left", payload["text"])
+        self.assertEqual(self.resend.requests, [])
+        # The whole email must reach the iframe: escaped once inside srcdoc="…", never cut at its first quote.
+        self.assertContains(response, 'srcdoc="&lt;!doctype html&gt;')
+        self.assertContains(response, "Only 3 left")
+
     def test_admin_retry(self):
         self.client.post("/admin/login", {"password": "admin-pw"})
         self.signup()

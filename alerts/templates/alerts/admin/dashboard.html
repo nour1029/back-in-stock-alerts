@@ -148,6 +148,7 @@
         <span class="switch__track" aria-hidden="true"></span>
         <span class="switch__label">Live</span>
       </label>
+      <a class="btn btn--ghost" href="/admin/email-preview" aria-label="Preview the alert email">{% icon "mail" 16 %}<span class="btn__text">Email preview</span></a>
       <a class="btn btn--ghost" href="/admin/export.csv" aria-label="Export all requests as CSV">{% icon "download" 16 %}<span class="btn__text">Export CSV</span></a>
       <form method="post" action="/admin/logout">
         {% csrf_token %}

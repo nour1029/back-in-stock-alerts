@@ -22,7 +22,9 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from alerts.models import AlertRequest, StockEvent
+from alerts.services import email as email_service
 from alerts.services import requeue, stock
+from alerts.validation import clean_sku
 
 W = AlertRequest.Status
 PAGE_SIZE = 50
@@ -243,3 +245,47 @@ def export_csv(request):
             )]
         )
     return response
+
+
+PREVIEW_EMAIL = "shopper@example.com"
+MAX_PREVIEW_QUANTITY = 100_000
+
+
+def _preview_quantity(raw: str | None, product: dict | None) -> int | None:
+    """?qty= overrides the stock level shown in the email; blank means the live quantity."""
+    try:
+        value = int(str(raw).strip())
+    except (TypeError, ValueError):
+        return product.get("quantity") if product else None
+    return min(max(value, 0), MAX_PREVIEW_QUANTITY)
+
+
+@never_cache
+@require_GET
+@admin_required
+def email_preview(request):
+    """Render the real alert email for any product, exactly as the notifier would send it."""
+    catalogue = stock.get_catalogue()
+    sku = clean_sku(request.GET.get("sku", "")) or (catalogue[0]["sku"] if catalogue else "SAMPLE-SKU")
+    sku = stock.canonical_sku(sku)
+    product = stock.get_product(sku)
+    quantity = _preview_quantity(request.GET.get("qty"), product)
+    sample = AlertRequest(
+        email=PREVIEW_EMAIL,
+        sku=sku,
+        product_name=(product or {}).get("name", ""),
+        created_at=timezone.now() - timedelta(days=2),
+    )
+    return render(
+        request,
+        "alerts/admin/email_preview.html",
+        {
+            "store_name": settings.STORE_NAME,
+            "catalogue": catalogue,
+            "sku": sku,
+            "in_catalogue": any(p["sku"] == sku for p in catalogue),
+            "qty": request.GET.get("qty", "").strip(),
+            "quantity": quantity,
+            "payload": email_service.build_payload(sample, product, quantity),
+        },
+    )
