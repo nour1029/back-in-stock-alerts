@@ -89,6 +89,13 @@
           </select>
         </div>
         <div class="field">
+          <label for="signed_up">Customer signed up while it was</label>
+          <select id="signed_up" name="signed_up">
+            <option value="sold_out" {% if signed_up == "sold_out" %}selected{% endif %}>Sold out (“is back in stock”)</option>
+            <option value="in_stock" {% if signed_up == "in_stock" %}selected{% endif %}>In stock (“is in stock now”)</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="qty">Stock in the email</label>
           <input id="qty" name="qty" type="number" min="0" max="100000" inputmode="numeric" value="{{ qty }}" placeholder="Live stock{% if quantity is not None %} ({{ quantity }}){% endif %}">
           <p class="hint">Leave blank for live stock. 10 or fewer shows “Only N left”.</p>
@@ -147,6 +154,7 @@
 
   // Re-render as soon as a control changes.
   form.elements.sku.addEventListener("change", function () { form.submit(); });
+  form.elements.signed_up.addEventListener("change", function () { form.submit(); });
   document.querySelectorAll(".preset").forEach(function (btn) {
     btn.addEventListener("click", function () { form.elements.qty.value = btn.getAttribute("data-qty"); form.submit(); });
   });

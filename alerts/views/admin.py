@@ -270,11 +270,14 @@ def email_preview(request):
     sku = stock.canonical_sku(sku)
     product = stock.get_product(sku)
     quantity = _preview_quantity(request.GET.get("qty"), product)
+    # Which email: the usual "back in stock" one, or the one for someone who signed up while it was available.
+    signed_up = "in_stock" if request.GET.get("signed_up") == "in_stock" else "sold_out"
     sample = AlertRequest(
         email=PREVIEW_EMAIL,
         sku=sku,
         product_name=(product or {}).get("name", ""),
         created_at=timezone.now() - timedelta(days=2),
+        out_of_stock_seen=signed_up == "sold_out",
     )
     return render(
         request,
@@ -286,6 +289,7 @@ def email_preview(request):
             "in_catalogue": any(p["sku"] == sku for p in catalogue),
             "qty": request.GET.get("qty", "").strip(),
             "quantity": quantity,
+            "signed_up": signed_up,
             "payload": email_service.build_payload(sample, product, quantity),
         },
     )

@@ -6,7 +6,7 @@
 <meta name="x-apple-disable-message-reformatting">
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
-<title>{{ product_name }} is back in stock</title>
+<title>{{ product_name }} is {% if restocked %}back in stock{% else %}in stock now{% endif %}</title>
 <style>
   body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
   a { color: #047857; }
@@ -21,7 +21,7 @@
 <body style="margin:0;padding:0;background-color:#f3f4f6;">
   <!-- Preheader: shown as the inbox preview line -->
   <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f3f4f6;opacity:0;">
-    Good news: the item you asked about is available again{% if quantity and quantity <= 10 %}, but only {{ quantity }} left{% endif %}.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;
+    Good news: the item you asked about is {% if restocked %}available again{% else %}in stock right now{% endif %}{% if quantity and quantity <= 10 %}, but only {{ quantity }} left{% endif %}.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3f4f6;">
@@ -47,15 +47,15 @@
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="background-color:#ecfdf5;border-radius:999px;padding:5px 12px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#065f46;">
-                          &#9679;&nbsp; Back in stock
+                          &#9679;&nbsp; {% if restocked %}Back in stock{% else %}In stock now{% endif %}
                         </td>
                       </tr>
                     </table>
                     <h1 class="h1" style="margin:16px 0 0 0;font-size:28px;line-height:34px;font-weight:800;letter-spacing:-0.02em;color:#0f172a;">
-                      {{ product_name }} is back
+                      {{ product_name }} {% if restocked %}is back{% else %}is in stock{% endif %}
                     </h1>
                     <p style="margin:12px 0 0 0;font-size:16px;line-height:26px;color:#475569;">
-                      You asked us to let you know when this was available again, and it is. Popular items tend to sell out quickly, so if you still want it, now’s a good time.
+                      {% if restocked %}You asked us to let you know when this was available again, and it is.{% else %}Here’s the link you asked for: it’s available right now.{% endif %} Popular items tend to sell out quickly, so if you still want it, now’s a good time.
                     </p>
                   </td>
                 </tr>
@@ -103,7 +103,7 @@
           <tr>
             <td class="px" style="padding:20px 24px 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:19px;color:#6b7280;text-align:center;">
               You’re getting this one-time email because{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %} you asked {{ store_name }} to notify
-              <span style="color:#374151;">{{ email }}</span> when this item was back in stock.
+              <span style="color:#374151;">{{ email }}</span> {% if restocked %}when this item was back in stock{% else %}about this item{% endif %}.
               Your alert is now complete. We won’t email you about it again.
             </td>
           </tr>

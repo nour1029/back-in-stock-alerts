@@ -1,6 +1,6 @@
-{% autoescape off %}{{ product_name }} is back in stock
+{% autoescape off %}{{ product_name }} is {% if restocked %}back in stock{% else %}in stock now{% endif %}
 
-Good news: you asked us to let you know when this was available again, and it is.
+{% if restocked %}Good news: you asked us to let you know when this was available again, and it is.{% else %}Good news: here's the link you asked for. It's available right now.{% endif %}
 
 {{ product_name }}{% if price_display %} · {{ price_display }}{% endif %}
 SKU: {{ sku }}{% if quantity and quantity <= 10 %}
@@ -11,5 +11,5 @@ Shop it now: {{ product_url }}
 Popular items tend to sell out quickly, so if you still want it, now's a good time.
 
 --
-You're getting this one-time email because{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %} you asked {{ store_name }} to notify {{ email }} when this item was back in stock. Your alert is now complete. We won't email you about it again.
+You're getting this one-time email because{% if requested_at %} on {{ requested_at|date:"j M Y" }}{% endif %} you asked {{ store_name }} to notify {{ email }} {% if restocked %}when this item was back in stock{% else %}about this item{% endif %}. Your alert is now complete. We won't email you about it again.
 {% endautoescape %}

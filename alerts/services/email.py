@@ -64,6 +64,8 @@ def build_context(alert, product: dict | None, quantity: int | None) -> dict:
         "product_url": settings.PRODUCT_URL_TEMPLATE.format(sku=alert.sku),
         "quantity": quantity,
         "requested_at": alert.created_at,
+        # Signed up while it was available and never saw it sell out: it isn't "back", it's in stock.
+        "restocked": bool(alert.out_of_stock_seen),
     }
 
 
@@ -72,7 +74,7 @@ def build_payload(alert, product: dict | None, quantity: int | None) -> dict:
     return {
         "from": settings.EMAIL_FROM,
         "to": [alert.email],
-        "subject": f"{context['product_name']} is back in stock",
+        "subject": f"{context['product_name']} is {'back in stock' if context['restocked'] else 'in stock now'}",
         "html": render_to_string("alerts/email/back_in_stock.html", context),
         "text": render_text("alerts/email/back_in_stock.txt", context),
     }

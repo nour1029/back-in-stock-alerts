@@ -128,6 +128,19 @@ class SignupTests(FakesMixin, TestCase):
         self.assertEqual([e["to"][0] for e in self.resend.delivered], ["ada@example.com"])
         self.assertEqual(AlertRequest.objects.get().status, W.NOTIFIED)
 
+    def test_email_wording_follows_whether_the_item_sold_out(self):
+        self.store.stock["KNF-CHF-20"] = 5
+        self.signup("now@example.com")  # in stock at sign-up
+        notifier.send_due_requests()
+        self.store.stock["KNF-CHF-20"] = 0
+        self.signup("later@example.com")  # sold out at sign-up, then restocked
+        self.store.stock["KNF-CHF-20"] = 5
+        notifier.reconcile()
+        notifier.send_due_requests()
+        subjects = {e["to"][0]: e["subject"] for e in self.resend.delivered}
+        self.assertEqual(subjects["now@example.com"], "Chef's Knife, 20 cm is in stock now")
+        self.assertEqual(subjects["later@example.com"], "Chef's Knife, 20 cm is back in stock")
+
     def test_in_stock_duplicate_signup_sends_once(self):
         self.store.stock["KNF-CHF-20"] = 5
         self.signup()
@@ -530,6 +543,8 @@ class PageAndAdminTests(FakesMixin, TestCase):
         # The whole email must reach the iframe: escaped once inside srcdoc="…", never cut at its first quote.
         self.assertContains(response, 'srcdoc="&lt;!doctype html&gt;')
         self.assertContains(response, "Only 3 left")
+        in_stock = self.client.get("/admin/email-preview?sku=knf-chf-20&signed_up=in_stock")
+        self.assertEqual(in_stock.context["payload"]["subject"], "Chef's Knife, 20 cm is in stock now")
 
     def test_admin_retry(self):
         self.client.post("/admin/login", {"password": "admin-pw"})
