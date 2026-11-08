@@ -3,175 +3,157 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ store_name }}: demo store</title>
-<meta name="description" content="Demo storefront showing the back-in-stock alert widget embedded on product pages.">
+<title>Back-in-stock alerts · {{ store_name }}</title>
+<meta name="description" content="Shoppers ask to be emailed when a sold-out item comes back, and hear from us exactly once.">
 {% include "alerts/_tokens.html" %}
 <style>
   .nav { border-bottom: 1px solid var(--border); background: var(--surface); }
-  .nav__inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 12px; }
-  .wordmark { font-size: 18px; font-weight: 800; letter-spacing: -.03em; text-decoration: none; }
-  .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 600; }
-  .nav__links { margin-left: auto; display: flex; gap: 4px; }
+  .nav__inner { max-width: 960px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .brand__name { font-weight: 700; font-size: 14px; letter-spacing: -.01em; line-height: 1.2; }
+  .brand__sub { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); }
+  .nav__links { margin-left: auto; }
 
-  main { max-width: 1180px; margin: 0 auto; padding: 32px 24px 72px; }
-  .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; align-items: stretch; margin-bottom: 40px; }
-  .intro__copy { padding: 8px 0; }
-  .eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-text); }
-  h1 { margin: 10px 0 10px; font-size: clamp(28px, 4vw, 40px); line-height: 1.08; letter-spacing: -.035em; font-weight: 800; }
-  .intro__copy p { margin: 0 0 18px; max-width: 52ch; color: var(--text-2); font-size: 16px; }
-  .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 14px; color: var(--text-2); }
-  .steps li { display: flex; gap: 10px; align-items: flex-start; }
-  .steps .n { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-size: 12px; font-weight: 700; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.025em; font-weight: 800; }
+  .lede { margin: 6px 0 28px; max-width: 62ch; color: var(--text-2); font-size: 15px; }
+  h2 { margin: 0 0 4px; font-size: 16px; letter-spacing: -.01em; }
+  .section-lede { margin: 0 0 16px; font-size: 13px; color: var(--text-3); }
+  section + section { margin-top: 36px; }
 
-  .snippet { display: flex; flex-direction: column; min-width: 0; border-radius: var(--radius-lg); background: #0f172a; color: #e2e8f0; box-shadow: var(--shadow); overflow: hidden; border: 1px solid #1e293b; }
-  .snippet__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 10px 16px; border-bottom: 1px solid #1e293b; font-size: 13px; color: #94a3b8; }
-  .snippet__bar strong { color: #e2e8f0; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
-  .copy { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid #334155; border-radius: var(--radius-sm); background: transparent; color: #e2e8f0; font: 600 12px var(--font); cursor: pointer; }
-  .copy:hover { background: #1e293b; }
-  .snippet pre { margin: 0; padding: 16px; overflow-x: auto; font: 12.5px/1.65 var(--mono); flex: 1; }
-  .t-tag { color: #7dd3fc; } .t-attr { color: #c4b5fd; } .t-str { color: #86efac; } .t-com { color: #64748b; }
+  /* Try it */
+  .try { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+  label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+  select { width: 100%; height: 40px; padding: 0 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 14px var(--font); }
+  select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .next { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; color: var(--text-2); }
+  .next li { display: flex; gap: 8px; align-items: flex-start; }
+  .next .n { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-size: 11px; font-weight: 700; }
+  .frame { min-width: 0; padding: 16px; border-radius: var(--radius); background: var(--surface-2); }
+  .frame iframe { display: block; width: 100%; height: 340px; border: 0; transition: height .2s var(--ease); }
+  /* Match the embed's scheme so the browser keeps the iframe transparent in dark mode. */
+  .frame iframe { color-scheme: normal; }
+  .notice { display: flex; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--warn-text); }
 
-  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-  .section-head h2 { margin: 0; font-size: 20px; letter-spacing: -.02em; }
-  .section-head span { font-size: 13px; color: var(--text-3); }
+  /* Requirements */
+  .reqs { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .req { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; padding: 16px 20px; border-top: 1px solid var(--border); }
+  .req:first-child { border-top: 0; }
+  .req__n { grid-row: span 2; align-self: start; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); font-size: 13px; font-weight: 700; }
+  .req__title { font-weight: 600; font-size: 14px; }
+  .req__route { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); font: 12px var(--mono); vertical-align: 1px; }
+  .req__how { grid-column: 2; font-size: 13px; color: var(--text-3); }
+  .req__action { grid-row: 1 / span 2; grid-column: 3; display: flex; gap: 6px; }
+  .copy[data-done] { color: var(--accent-text); border-color: var(--accent); }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-  .product { display: flex; flex-direction: column; min-width: 0; }
-  .product__media { position: relative; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--surface-2); }
-  .product__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease); }
-  .product:hover .product__media img { transform: scale(1.03); }
-  .product--out .product__media img { filter: grayscale(.35) opacity(.82); }
-  .badge { position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255, 255, 255, .94); color: #0f172a; box-shadow: var(--shadow-sm); }
-  .badge--low { color: #92400e; }
-  .product__body { padding: 12px 2px 0; display: flex; flex-direction: column; gap: 2px; flex: 1; }
-  .product__cat { font-size: 12px; color: var(--text-3); }
-  .product__name { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; }
-  .product__price { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .product__cta { margin-top: 12px; }
-  .product__cta .btn { width: 100%; min-height: 42px; }
-  .stock-note { display: inline-flex; align-items: center; gap: 6px; min-height: 42px; font-size: 13px; font-weight: 600; color: var(--accent-text); }
+  details.embed { margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  details.embed summary { display: flex; align-items: center; gap: 8px; padding: 14px 20px; cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; }
+  details.embed summary::-webkit-details-marker { display: none; }
+  details.embed summary::after { content: "Show"; margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-3); }
+  details.embed[open] summary::after { content: "Hide"; }
+  details.embed pre { margin: 0; padding: 16px 20px; border-top: 1px solid var(--border); overflow-x: auto; background: var(--surface-2); font: 12.5px/1.65 var(--mono); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  details.embed p { margin: 0; padding: 0 20px 14px; font-size: 13px; color: var(--text-3); }
 
-  .fallback { max-width: 480px; }
-  .fallback iframe { width: 100%; border: 0; height: 360px; }
-  .notice { display: flex; gap: 10px; padding: 14px 16px; margin-bottom: 16px; border-radius: var(--radius); background: var(--warn-soft); color: var(--warn-text); font-size: 14px; }
-
-  /* Dialog */
-  dialog { width: min(480px, calc(100vw - 24px)); padding: 0; border: 0; border-radius: var(--radius-lg); background: var(--surface); color: var(--text); box-shadow: var(--shadow-lg); }
-  dialog::backdrop { background: rgba(15, 23, 42, .5); backdrop-filter: blur(2px); }
-  dialog[open] { animation: pop .22s var(--ease); }
-  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
-  .dialog__head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 0 20px; }
-  .dialog__head h2 { margin: 0; font-size: 14px; color: var(--text-3); font-weight: 600; }
-  .close { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--text-2); cursor: pointer; }
-  .close:hover { background: var(--surface-2); color: var(--text); }
-  .dialog__body { padding: 8px 16px 16px; }
-  .dialog__body iframe { display: block; width: 100%; height: 340px; border: 0; transition: height .2s var(--ease); }
-
-  footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; }
-  footer a { color: var(--text-2); }
-
-  @media (max-width: 860px) { .intro { grid-template-columns: 1fr; } }
-  @media (max-width: 560px) {
-    .nav__inner, main { padding-left: 16px; padding-right: 16px; }
-    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .product__name, .product__price { font-size: 14px; }
-    .nav__links .btn__text { display: none; }
+  @media (pointer: coarse) { .req__action .btn, select { min-height: 44px; } details.embed summary { min-height: 48px; } }
+  @media (max-width: 760px) {
+    .try { grid-template-columns: 1fr; }
+    .req { grid-template-columns: 28px minmax(0, 1fr); }
+    .req__action { grid-row: auto; grid-column: 2; margin-top: 8px; }
   }
+  @media (max-width: 560px) { .nav__inner, main { padding-left: 16px; padding-right: 16px; } .btn__text { display: none; } }
 </style>
 </head>
 <body>
 <header class="nav">
   <div class="nav__inner">
-    <a class="wordmark" href="/">{{ store_name }}</a>
-    <span class="tag">Demo store</span>
-    <nav class="nav__links" aria-label="Site">
-      <a class="btn btn--ghost" href="/embed">{% icon "code" 16 %}<span class="btn__text">Widget only</span></a>
-      <a class="btn btn--ghost" href="/admin">{% icon "lock" 16 %}<span class="btn__text">Admin</span></a>
-    </nav>
+    <a class="brand" href="/"><span class="mark">{% icon "bell" 18 %}</span><span class="brand__name">{{ store_name }}<span class="brand__sub">Back-in-stock alerts</span></span></a>
+    <nav class="nav__links" aria-label="Site"><a class="btn btn--ghost" href="/admin">{% icon "lock" 16 %}<span class="btn__text">Admin</span></a></nav>
   </div>
 </header>
 
 <main>
-  <section class="intro">
-    <div class="intro__copy">
-      <span class="eyebrow">{% icon "bell" 14 %}Back-in-stock alerts</span>
-      <h1>Never lose a customer to “sold out” again.</h1>
-      <p>This demo store shows the alert widget the way shoppers see it. Pick any sold-out product below and ask to be notified. You’ll get exactly one email when it really comes back.</p>
-      <ol class="steps">
-        <li><span class="n">1</span>Shopper leaves their email on a sold-out product.</li>
-        <li><span class="n">2</span>Your inventory system sends a stock webhook. We verify it against the live stock API.</li>
-        <li><span class="n">3</span>One email goes out per shopper, even if webhooks repeat or the network fails.</li>
-      </ol>
-    </div>
-    <div class="snippet">
-      <div class="snippet__bar">
-        <strong>{% icon "code" 15 %}Add it to any product page</strong>
-        <button class="copy" type="button" id="copy-snippet">{% icon "copy" 14 %}<span>Copy</span></button>
+  <h1>Back-in-stock alerts</h1>
+  <p class="lede">Shoppers ask to be emailed when a sold-out item comes back. They hear from us once: not zero times, and not twice.</p>
+
+  <!-- 1. The thing shoppers use -->
+  <section aria-labelledby="try-title">
+    <h2 id="try-title">Try it</h2>
+    <p class="section-lede">The real embed form, exactly as a store shows it in an iframe.</p>
+    <div class="try">
+      <div>
+        <label for="product">Product</label>
+        {% with sold_out=products|dictsort:"name" %}
+        <select id="product">
+          <optgroup label="Sold out">{% for p in sold_out %}{% if not p.in_stock %}<option value="{{ p.sku }}">{{ p.name|default:p.sku }}</option>{% endif %}{% endfor %}</optgroup>
+          <optgroup label="In stock">{% for p in sold_out %}{% if p.in_stock %}<option value="{{ p.sku }}">{{ p.name|default:p.sku }}</option>{% endif %}{% endfor %}</optgroup>
+        </select>
+        {% endwith %}
+        <ol class="next">
+          <li><span class="n">1</span><span>Leave an email in the form.</span></li>
+          <li><span class="n">2</span><span>When the stock webhook confirms a restock, one email goes out.</span></li>
+          <li><span class="n">3</span><span>Watch it land in <a href="/admin">the admin</a>.</span></li>
+        </ol>
       </div>
-<pre id="snippet-code"><code><span class="t-com">&lt;!-- Replace YOUR-SKU. Optional: &amp;theme=dark|auto  &amp;accent=%23RRGGBB --&gt;</span>
-<span class="t-tag">&lt;iframe</span> <span class="t-attr">src</span>=<span class="t-str">"<span data-origin>https://your-app</span>/embed?sku=YOUR-SKU"</span>
-  <span class="t-attr">title</span>=<span class="t-str">"Back in stock alert"</span> <span class="t-attr">loading</span>=<span class="t-str">"lazy"</span>
-  <span class="t-attr">style</span>=<span class="t-str">"width:100%;max-width:440px;height:340px;border:0"</span><span class="t-tag">&gt;&lt;/iframe&gt;</span>
-<span class="t-tag">&lt;script&gt;</span>
-  <span class="t-com">// Optional: let the widget size itself.</span>
-  addEventListener(<span class="t-str">"message"</span>, (e) =&gt; {
-    if (e.data?.type !== <span class="t-str">"back-in-stock:resize"</span>) return;
-    for (const f of document.querySelectorAll(<span class="t-str">"iframe"</span>))
-      if (f.contentWindow === e.source) f.style.height = e.data.height + <span class="t-str">"px"</span>;
-  });
-<span class="t-tag">&lt;/script&gt;</span></code></pre>
+      <div class="frame">
+        <iframe id="embed-frame" src="/embed?theme=auto" title="Back-in-stock alert form" data-autosize></iframe>
+        {% if not products %}<p class="notice">{% icon "alert" 16 %}<span>The stock API didn’t answer, so there’s no product list. The form still works with a typed SKU.</span></p>{% endif %}
+      </div>
     </div>
   </section>
 
-  <section aria-labelledby="catalogue-title">
-    <div class="section-head">
-      <h2 id="catalogue-title">Shop the collection</h2>
-      {% if products %}<span class="num">{{ products|length }} products</span>{% endif %}
+  <!-- 2. The brief, requirement by requirement -->
+  <section aria-labelledby="reqs-title">
+    <h2 id="reqs-title">What the brief asks for</h2>
+    <p class="section-lede">Each requirement, where it lives, and a quick way to check it.</p>
+    <div class="reqs">
+      <div class="req">
+        <span class="req__n">1</span>
+        <div class="req__title">Email + SKU form for an iframe <span class="req__route">GET /embed</span></div>
+        <div class="req__how">Can be framed on any site. Optional <span class="mono">?sku=</span>, <span class="mono">&amp;theme=dark|auto</span>, <span class="mono">&amp;accent=%23RRGGBB</span>.</div>
+        <div class="req__action"><a class="btn btn--sm" href="/embed" target="_blank" rel="noopener">Open{% icon "arrow-right" 14 %}</a></div>
+      </div>
+      <div class="req">
+        <span class="req__n">2</span>
+        <div class="req__title">Create a request, no duplicates <span class="req__route">POST /api/requests</span></div>
+        <div class="req__how">JSON <span class="mono">{ email, sku }</span>. <span class="mono">201</span> when new, <span class="mono">200</span> if that person is already waiting.</div>
+        <div class="req__action"><button class="btn btn--sm copy" type="button" data-copy="api">{% icon "copy" 14 %}<span>Copy curl</span></button></div>
+      </div>
+      <div class="req">
+        <span class="req__n">3</span>
+        <div class="req__title">Stock webhook <span class="req__route">POST /webhooks/stock</span></div>
+        <div class="req__how">Needs <span class="mono">X-Webhook-Secret</span>. Duplicates are absorbed, and stock is re-checked live before anyone is emailed.</div>
+        <div class="req__action"><button class="btn btn--sm copy" type="button" data-copy="webhook">{% icon "copy" 14 %}<span>Copy curl</span></button></div>
+      </div>
+      <div class="req">
+        <span class="req__n">4</span>
+        <div class="req__title">Requests behind a password <span class="req__route">GET /admin</span></div>
+        <div class="req__how">Every request, its status, and when it was notified. Password: <span class="mono">ADMIN_PASSWORD</span>, or <span class="mono">WEBHOOK_SECRET</span> if that isn’t set.</div>
+        <div class="req__action"><a class="btn btn--sm" href="/admin">Open{% icon "arrow-right" 14 %}</a></div>
+      </div>
+      <div class="req">
+        <span class="req__n">5</span>
+        <div class="req__title">HTML email, good on a phone <span class="req__route">Resend format</span></div>
+        <div class="req__how">The real template for any product and stock level. Previewing never sends anything.</div>
+        <div class="req__action"><a class="btn btn--sm" href="/admin/email-preview">Preview{% icon "arrow-right" 14 %}</a></div>
+      </div>
     </div>
 
-    {% if products %}
-    <div class="grid">
-      {% for p in products %}
-      <article class="product{% if not p.in_stock %} product--out{% endif %}">
-        <div class="product__media">
-          {% if p.image %}<img src="{{ p.image }}" alt="{{ p.name }}" width="600" height="600" loading="lazy" decoding="async">{% endif %}
-          {% if not p.in_stock %}<span class="badge">Sold out</span>
-          {% elif p.quantity <= 5 %}<span class="badge badge--low">Only {{ p.quantity }} left</span>{% endif %}
-        </div>
-        <div class="product__body">
-          <span class="product__cat">{{ p.category }}</span>
-          <h3 class="product__name">{{ p.name|default:p.sku }}</h3>
-          <span class="product__price">{{ p|money }}</span>
-          <div class="product__cta">
-            {% if p.in_stock %}
-              <span class="stock-note">{% icon "check-circle" 16 %}In stock, ready to ship</span>
-            {% else %}
-              <button class="btn" type="button" data-notify="{{ p.sku }}" data-name="{{ p.name|default:p.sku }}">{% icon "bell" 16 %}Notify me when it’s back</button>
-            {% endif %}
-          </div>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="notice" role="status">{% icon "alert" 18 %}<span>We couldn’t load the catalogue from the stock API just now. The widget still works: try a SKU below.</span></div>
-    <div class="fallback"><iframe src="/embed" title="Back in stock alert" data-autosize></iframe></div>
-    {% endif %}
+    <details class="embed">
+      <summary>{% icon "code" 16 %}Embed code for a store’s product page</summary>
+      <pre id="snippet"><code>&lt;iframe src="<span data-origin>https://your-app</span>/embed?sku=YOUR-SKU"
+  title="Back in stock alert" loading="lazy"
+  style="width:100%;max-width:440px;height:340px;border:0"&gt;&lt;/iframe&gt;
+&lt;script&gt;
+  addEventListener("message", (e) =&gt; {
+    if (e.data?.type !== "back-in-stock:resize") return;
+    for (const f of document.querySelectorAll("iframe"))
+      if (f.contentWindow === e.source) f.style.height = e.data.height + "px";
+  });
+&lt;/script&gt;</code></pre>
+      <p>The script is optional. It lets the form size itself to its content.</p>
+    </details>
   </section>
 </main>
-
-<footer>
-  <span>© {% now "Y" %} {{ store_name }}. Demo storefront.</span>
-  <span><a href="/admin">Admin dashboard</a></span>
-</footer>
-
-<dialog id="notify-dialog" aria-labelledby="dialog-title">
-  <div class="dialog__head">
-    <h2 id="dialog-title">Back-in-stock alert</h2>
-    <button class="close" type="button" id="dialog-close" aria-label="Close">{% icon "x" 18 %}</button>
-  </div>
-  <div class="dialog__body"><iframe id="notify-frame" title="Back in stock alert" data-autosize></iframe></div>
-</dialog>
 
 <script>
 (function () {
@@ -179,7 +161,7 @@
   var origin = location.origin;
   document.querySelectorAll("[data-origin]").forEach(function (el) { el.textContent = origin; });
 
-  // Size any of our embed iframes to their content.
+  // Size the embed to its content.
   window.addEventListener("message", function (e) {
     if (e.origin !== origin || !e.data || e.data.type !== "back-in-stock:resize") return;
     document.querySelectorAll("iframe[data-autosize]").forEach(function (f) {
@@ -187,30 +169,24 @@
     });
   });
 
-  var dialog = document.getElementById("notify-dialog");
-  var frame = document.getElementById("notify-frame");
-  var lastTrigger = null;
-  document.querySelectorAll("[data-notify]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      lastTrigger = btn;
-      frame.src = "/embed?sku=" + encodeURIComponent(btn.getAttribute("data-notify"));
-      frame.title = "Back in stock alert for " + btn.getAttribute("data-name");
-      if (typeof dialog.showModal === "function") dialog.showModal(); else window.open(frame.src, "_blank");
-    });
-  });
-  function close() { dialog.close(); }
-  document.getElementById("dialog-close").addEventListener("click", close);
-  dialog.addEventListener("click", function (e) { if (e.target === dialog) close(); });
-  dialog.addEventListener("close", function () { frame.src = "about:blank"; if (lastTrigger) lastTrigger.focus(); });
+  var select = document.getElementById("product"), frame = document.getElementById("embed-frame");
+  function show() { if (select && select.value) frame.src = "/embed?theme=auto&sku=" + encodeURIComponent(select.value); }
+  if (select) { select.addEventListener("change", show); show(); }
 
-  var copyBtn = document.getElementById("copy-snippet");
-  copyBtn.addEventListener("click", function () {
-    var text = document.getElementById("snippet-code").innerText;
-    var label = copyBtn.querySelector("span");
-    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
-      label.textContent = "Copied";
-    }, function () { label.textContent = "Press ⌘C"; }).finally(function () {
-      setTimeout(function () { label.textContent = "Copy"; }, 1800);
+  // Ready-to-run curl commands for the two API endpoints.
+  var commands = {
+    api: "curl -X POST " + origin + "/api/requests \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"email\":\"you@example.com\",\"sku\":\"" + (select && select.value || "SKU") + "\"}'",
+    webhook: "curl -X POST " + origin + "/webhooks/stock \\\n  -H \"X-Webhook-Secret: $WEBHOOK_SECRET\" \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"event_id\":\"evt_test_1\",\"sku\":\"" + (select && select.value || "SKU") + "\",\"quantity\":5}'"
+  };
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var label = btn.querySelector("span"), text = commands[btn.getAttribute("data-copy")];
+      if (select) text = text.replace(/"sku":"[^"]*"/, '"sku":"' + select.value + '"');
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+        label.textContent = "Copied"; btn.setAttribute("data-done", "");
+      }, function () { label.textContent = "Copy failed"; }).finally(function () {
+        setTimeout(function () { label.textContent = "Copy curl"; btn.removeAttribute("data-done"); }, 1800);
+      });
     });
   });
 })();
