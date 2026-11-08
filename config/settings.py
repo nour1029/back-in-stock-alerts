@@ -81,6 +81,8 @@ INSTALLED_APPS = ["alerts"]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Outside CSRF, so even its 403s for /admin get Cache-Control: no-store.
+    "alerts.middleware.AdminNeverCacheMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

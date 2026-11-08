@@ -1,4 +1,5 @@
 import threading
+import uuid
 from datetime import timedelta
 from unittest import mock
 
@@ -505,6 +506,27 @@ class PageAndAdminTests(FakesMixin, TestCase):
         self.assertEqual((good.status_code, good["Location"]), (302, "/admin?status=failed"))
         self.assertEqual(self.client.get("/admin/").status_code, 200)
         self.assertEqual(self.client.get("/admin/export.csv").status_code, 200)
+
+    def test_every_admin_response_is_never_cached(self):
+        def assert_no_store(response, label):
+            self.assertIn("no-store", response.get("Cache-Control", ""), label)
+            self.assertIn("private", response.get("Cache-Control", ""), label)
+
+        strict = Client(enforce_csrf_checks=True)  # POSTs without a token are rejected by middleware
+        retry_url = f"/admin/requests/{uuid.uuid4()}/retry"
+        for path in ["/admin", "/admin/", "/admin/email-preview", "/admin/export.csv", "/admin/nope"]:
+            assert_no_store(self.client.get(path), f"GET {path} signed out")
+        for path in ["/admin/login", "/admin/logout", retry_url]:
+            assert_no_store(strict.post(path), f"POST {path} without CSRF token")
+            assert_no_store(self.client.get(path), f"GET {path} (wrong method)")
+        self.client.post("/admin/login", {"password": "admin-pw"})
+        for path in ["/admin", "/admin/email-preview?sku=knf-chf-20", "/admin/export.csv"]:
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+            assert_no_store(response, f"GET {path} signed in")
+        assert_no_store(self.client.post(retry_url, {"next": "/admin"}), "POST retry signed in")
+        assert_no_store(self.client.post("/admin/logout"), "POST logout")
+        self.assertNotIn("Cache-Control", self.client.get("/embed").headers)  # public pages unaffected
 
     def test_admin_refuses_login_without_password_configured(self):
         with override_settings(ADMIN_PASSWORD=""):
