@@ -26,6 +26,8 @@
   label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
   select { width: 100%; height: 40px; padding: 0 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 14px var(--font); }
   select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .source { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0 0; font-size: 12px; color: var(--text-3); }
+  .source .icon { margin-top: 2px; color: var(--accent-text); }
   .next { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; color: var(--text-2); }
   .next li { display: flex; gap: 8px; align-items: flex-start; }
   .next .n { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-size: 11px; font-weight: 700; }
@@ -85,9 +87,10 @@
         {% with sold_out=products|dictsort:"name" %}
         <select id="product">
           <optgroup label="Sold out">{% for p in sold_out %}{% if not p.in_stock %}<option value="{{ p.sku }}">{{ p.name|default:p.sku }}</option>{% endif %}{% endfor %}</optgroup>
-          <optgroup label="In stock">{% for p in sold_out %}{% if p.in_stock %}<option value="{{ p.sku }}">{{ p.name|default:p.sku }}</option>{% endif %}{% endfor %}</optgroup>
+          <optgroup label="In stock">{% for p in sold_out %}{% if p.in_stock %}<option value="{{ p.sku }}">{{ p.name|default:p.sku }} · {{ p.quantity }} left</option>{% endif %}{% endfor %}</optgroup>
         </select>
         {% endwith %}
+        {% if products %}<p class="source">{% icon "zap" 12 %}<span>Live from the stock API (<span class="mono">STOCK_API_URL</span>) · {{ products|length }} products · refreshed every 60 s</span></p>{% endif %}
         <ol class="next">
           <li><span class="n">1</span><span>Leave an email in the form.</span></li>
           <li><span class="n">2</span><span>When the stock webhook confirms a restock, one email goes out.</span></li>
